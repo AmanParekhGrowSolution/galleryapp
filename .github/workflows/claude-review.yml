@@ -29,9 +29,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AGENT_PAT }}
         run: |
-          # Fetch the PR branch so the diff is available
-          git fetch origin ${{ github.event.pull_request.head.ref }}
-          git checkout ${{ github.event.pull_request.head.ref }}
+          # actions/checkout@v4 already has the PR merge commit; no need to
+          # fetch the head branch (breaks on re-runs after branch deletion).
           git fetch origin ${{ github.event.pull_request.base.ref }}
 
           bash scripts/check-claude-md.sh --diff origin/${{ github.event.pull_request.base.ref }} \

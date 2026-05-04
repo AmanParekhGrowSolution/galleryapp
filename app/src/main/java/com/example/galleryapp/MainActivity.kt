@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,12 +44,20 @@ fun HelloScreen() {
             ),
         contentAlignment = Alignment.Center
     ) {
-        Text(
-            text = stringResource(R.string.hello_message),
-            color = Color.White,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = stringResource(R.string.hello_message),
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.hello_subtitle),
+                color = Color.White.copy(alpha = 0.87f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
     }
 }
 

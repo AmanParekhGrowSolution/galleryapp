@@ -60,7 +60,7 @@ fun PhotoViewerScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color.Black, Color(0xFF050505))))
+            .background(Brush.verticalGradient(bgGradient))
     ) {
         when (val state = uiState) {
             is PhotoViewerUiState.Loading -> Unit

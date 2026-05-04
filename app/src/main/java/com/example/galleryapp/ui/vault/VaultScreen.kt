@@ -48,7 +48,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
 
-private val bgGradient = listOf(Color(0xFF0A0E1A), Color(0xFF0F0C29), Color(0xFF131111))
+private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
 private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
 
 @Composable

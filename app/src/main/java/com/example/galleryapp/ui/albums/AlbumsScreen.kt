@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -97,6 +98,10 @@ private fun AlbumsContent(
         if (state.social.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.social_apps)) }
             item { SocialAppsGrid(albums = state.social) }
+        }
+        if (state.places.isNotEmpty()) {
+            item { SectionLabel(stringResource(R.string.places)) }
+            item { PlacesGrid(places = state.places) }
         }
         item { SectionLabel(stringResource(R.string.utility)) }
         item { UtilitySection(onVaultClick = onVaultClick) }
@@ -264,6 +269,66 @@ private fun SocialAppsGrid(albums: List<Album>) {
                 if (rowAlbums.size == 1) {
                     Spacer(modifier = Modifier.weight(1f))
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlacesGrid(places: List<AlbumPlace>) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        places.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                row.forEach { place ->
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(place.colorHex), Color(place.colorHex).copy(alpha = 0.8f))
+                                )
+                            )
+                            .clickable {}
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Brush.verticalGradient(darkOverlay))
+                        )
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Place,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
+                                Text(
+                                    text = place.name,
+                                    color = Color.White,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    text = "${place.count}",
+                                    color = Color.White.copy(alpha = 0.87f),
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                    }
+                }
+                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
         }
     }

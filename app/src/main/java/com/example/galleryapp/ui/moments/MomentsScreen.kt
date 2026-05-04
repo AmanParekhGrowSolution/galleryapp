@@ -137,7 +137,7 @@ private fun OnThisDayCard() {
                 .padding(16.dp)
         ) {
             Text(
-                text = stringResource(R.string.one_year_ago),
+                text = stringResource(R.string.one_year_ago_one_place),
                 color = Color.White.copy(alpha = 0.87f),
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Medium,

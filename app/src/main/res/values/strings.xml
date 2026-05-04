@@ -34,11 +34,14 @@
     <string name="places">Places</string>
     <string name="things">Things</string>
     <string name="no_results">No results found</string>
+    <string name="browse_offline">Browse Offline</string>
+    <string name="browse_offline_hint">Search your photos without internet</string>
 
     <!-- Moments -->
     <string name="moments_title">Moments</string>
     <string name="on_this_day">ON THIS DAY</string>
     <string name="one_year_ago">1 YEAR AGO</string>
+    <string name="one_year_ago_one_place">1 YEAR AGO · 1 PLACE</string>
 
     <!-- Vault -->
     <string name="vault_title">Private Vault</string>

@@ -322,7 +322,7 @@ private fun SettingsNavRow(
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
-            tint = Color.White.copy(alpha = 0.5f),
+            tint = Color.White,
             modifier = Modifier.size(18.dp)
         )
     }

@@ -205,7 +205,7 @@ private fun FeatureList() {
                 Icon(
                     imageVector = Icons.Default.AutoAwesome,
                     contentDescription = null,
-                    tint = Color(0xFFF59E0B),
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
                 Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
@@ -215,7 +215,7 @@ private fun FeatureList() {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint = Color(0xFF6366F1),
+                    tint = Color.White,
                     modifier = Modifier.size(16.dp)
                 )
             }

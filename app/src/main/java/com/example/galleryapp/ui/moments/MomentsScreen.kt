@@ -107,7 +107,7 @@ private fun OnThisDayCard() {
             .padding(horizontal = 16.dp)
             .aspectRatio(4f / 5f)
             .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xFF1E3A5F))
+            .background(Brush.linearGradient(listOf(Color(0xFF1E3A5F), Color(0xFF0D2D4A))))
     ) {
         Box(
             modifier = Modifier
@@ -119,7 +119,7 @@ private fun OnThisDayCard() {
                 .align(Alignment.TopStart)
                 .padding(16.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.White.copy(alpha = 0.2f))
+                .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.2f), Color.White.copy(alpha = 0.2f))))
                 .padding(horizontal = 10.dp, vertical = 6.dp)
         ) {
             Text(
@@ -160,7 +160,7 @@ private fun OnThisDayCard() {
                 .padding(16.dp)
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.2f))
+                .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.2f), Color.White.copy(alpha = 0.2f))))
         ) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
@@ -186,7 +186,7 @@ private fun RecentStoriesRow(stories: List<MomentStory>) {
                         .width(130.dp)
                         .aspectRatio(3f / 4f)
                         .clip(RoundedCornerShape(14.dp))
-                        .background(Color(story.colorHex))
+                        .background(Brush.linearGradient(listOf(Color(story.colorHex), Color(story.colorHex).copy(alpha = 0.8f))))
                         .clickable {}
                 ) {
                     Box(
@@ -222,7 +222,7 @@ private fun PeopleRow(people: List<MomentPerson>) {
                     modifier = Modifier
                         .size(64.dp)
                         .clip(CircleShape)
-                        .background(Color(person.colorHex))
+                        .background(Brush.linearGradient(listOf(Color(person.colorHex), Color(person.colorHex).copy(alpha = 0.8f))))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Face,
@@ -252,7 +252,7 @@ private fun PlacesGrid(places: List<MomentPlace>, onMapClick: () -> Unit) {
                             .weight(1f)
                             .aspectRatio(16f / 10f)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(place.colorHex))
+                            .background(Brush.linearGradient(listOf(Color(place.colorHex), Color(place.colorHex).copy(alpha = 0.8f))))
                             .clickable { onMapClick() }
                     ) {
                         Box(
@@ -301,12 +301,12 @@ private fun PlacesGrid(places: List<MomentPlace>, onMapClick: () -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Map,
                     contentDescription = stringResource(R.string.map_title),
-                    tint = Color(0xFF8B5CF6),
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = stringResource(R.string.map_title),
-                    color = Color(0xFF8B5CF6),
+                    color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.padding(start = 8.dp)

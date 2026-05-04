@@ -199,7 +199,7 @@ private fun NumericKeypad(onDigit: (String) -> Unit, onDelete: () -> Unit) {
                             Icon(
                                 imageVector = Icons.Default.Fingerprint,
                                 contentDescription = "Biometric",
-                                tint = Color.White.copy(alpha = 0.87f),
+                                tint = Color.White,
                                 modifier = Modifier.size(32.dp)
                             )
                         }
@@ -212,7 +212,7 @@ private fun NumericKeypad(onDigit: (String) -> Unit, onDelete: () -> Unit) {
                             Icon(
                                 imageVector = Icons.Default.Backspace,
                                 contentDescription = "Delete",
-                                tint = Color.White.copy(alpha = 0.87f),
+                                tint = Color.White,
                                 modifier = Modifier.size(26.dp)
                             )
                         }
@@ -221,7 +221,7 @@ private fun NumericKeypad(onDigit: (String) -> Unit, onDelete: () -> Unit) {
                             modifier = Modifier
                                 .size(64.dp)
                                 .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.08f))
+                                .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.1f), Color.White.copy(alpha = 0.06f))))
                                 .clickable { onDigit(key) }
                         ) {
                             Text(key, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Light)
@@ -265,7 +265,7 @@ private fun UnlockedVault(
                     .aspectRatio(1f)
                     .padding(1.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color(photo.placeholderColor))
+                    .background(Brush.linearGradient(listOf(Color(photo.placeholderColor), Color(photo.placeholderColor).copy(alpha = 0.85f))))
             ) {
                 Box(
                     modifier = Modifier
@@ -322,7 +322,7 @@ private fun PrivacyNoticeCard() {
             Icon(
                 imageVector = Icons.Default.Shield,
                 contentDescription = null,
-                tint = Color(0xFF8B5CF6),
+                tint = Color.White,
                 modifier = Modifier.size(24.dp)
             )
             Column(modifier = Modifier.padding(start = 12.dp)) {

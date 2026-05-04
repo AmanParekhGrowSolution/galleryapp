@@ -126,7 +126,7 @@ private fun AlbumsTopBar() {
             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add), tint = Color.White)
         }
         IconButton(onClick = {}) {
-            Icon(Icons.Default.Sort, contentDescription = null, tint = Color.White)
+            Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.sort), tint = Color.White)
         }
         IconButton(onClick = {}) {
             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = Color.White)
@@ -169,7 +169,7 @@ private fun FeaturedAlbumTile(album: Album, modifier: Modifier = Modifier) {
         modifier = modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(album.coverColor))
+            .background(Brush.linearGradient(listOf(Color(album.coverColor).copy(alpha = 0.8f), Color(album.coverColor))))
             .clickable {}
     ) {
         Box(
@@ -231,7 +231,7 @@ private fun SocialAlbumRow(album: Album) {
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(album.coverColor))
+                .background(Brush.linearGradient(listOf(Color(album.coverColor).copy(alpha = 0.8f), Color(album.coverColor))))
         )
         Column(modifier = Modifier.padding(start = 12.dp)) {
             Text(album.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)

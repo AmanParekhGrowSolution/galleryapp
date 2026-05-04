@@ -367,7 +367,7 @@ private fun PhotoThumbnailItem(
             .aspectRatio(1f)
             .padding(1.dp)
             .clip(RoundedCornerShape(2.dp))
-            .background(Color(photo.placeholderColor))
+            .background(Brush.linearGradient(listOf(Color(photo.placeholderColor), Color(photo.placeholderColor).copy(alpha = 0.85f))))
             .clickable(onClick = onClick)
     ) {
         if (selectionMode) {

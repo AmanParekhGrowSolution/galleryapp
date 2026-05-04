@@ -60,7 +60,7 @@ fun PhotoViewerScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Brush.verticalGradient(listOf(Color.Black, Color(0xFF050505))))
     ) {
         when (val state = uiState) {
             is PhotoViewerUiState.Loading -> Unit
@@ -73,7 +73,7 @@ fun PhotoViewerScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color(state.photo.placeholderColor))
+                        .background(Brush.linearGradient(listOf(Color(state.photo.placeholderColor), Color(state.photo.placeholderColor).copy(alpha = 0.85f))))
                 )
 
                 ViewerTopBar(
@@ -215,7 +215,7 @@ private fun InfoBottomSheet(
                 modifier = Modifier
                     .size(width = 40.dp, height = 4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(Color.White.copy(alpha = 0.3f))
+                    .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.3f))))
                     .align(Alignment.CenterHorizontally)
             )
             Spacer(modifier = Modifier.height(16.dp))

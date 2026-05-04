@@ -135,6 +135,8 @@
     <string name="view">View</string>
 
     <!-- Common -->
+    <string name="sort">Sort</string>
+    <string name="filter">Filter</string>
     <string name="cancel">Cancel</string>
     <string name="back">Back</string>
     <string name="close">Close</string>

@@ -183,7 +183,7 @@ private fun LanguageItem(name: String, selected: Boolean, onClick: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.Check,
                 contentDescription = null,
-                tint = Color(0xFF8B5CF6),
+                tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
         }

@@ -110,7 +110,7 @@ private fun MapTopBar(onBack: () -> Unit, modifier: Modifier = Modifier) {
             modifier = Modifier.weight(1f)
         )
         IconButton(onClick = {}) {
-            Icon(Icons.Default.FilterAlt, contentDescription = null, tint = Color.White)
+            Icon(Icons.Default.FilterAlt, contentDescription = stringResource(R.string.filter), tint = Color.White)
         }
         IconButton(onClick = {}) {
             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = Color.White)
@@ -128,7 +128,7 @@ private fun MapPinItem(pin: MapPin, modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White)
+                    .background(Brush.linearGradient(listOf(Color.White, Color(0xFFF5F5F5))))
                     .padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -136,7 +136,7 @@ private fun MapPinItem(pin: MapPin, modifier: Modifier = Modifier) {
                         modifier = Modifier
                             .size(24.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(Color(pin.color))
+                            .background(Brush.linearGradient(listOf(Color(pin.color), Color(pin.color).copy(alpha = 0.85f))))
                     )
                     Column(modifier = Modifier.padding(start = 6.dp)) {
                         Text(pin.name, color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -147,7 +147,8 @@ private fun MapPinItem(pin: MapPin, modifier: Modifier = Modifier) {
             Box(
                 modifier = Modifier
                     .size(8.dp)
-                    .background(Color.White, CircleShape)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Color.White, Color(0xFFF0F0F0))))
             )
         }
     }
@@ -173,7 +174,7 @@ private fun MapControlButton(icon: androidx.compose.ui.graphics.vector.ImageVect
         modifier = Modifier
             .size(36.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(Color.White.copy(alpha = 0.15f))
+            .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.15f))))
             .clickable(onClick = onClick)
     ) {
         Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
@@ -196,7 +197,7 @@ private fun LocationInfoCard(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF1E3A5F))
+                        .background(Brush.linearGradient(listOf(Color(0xFF1E3A5F), Color(0xFF0D2D4A))))
                 )
                 Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                     Text("Mumbai", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
@@ -226,7 +227,7 @@ private fun LocationInfoCard(modifier: Modifier = Modifier) {
                             .weight(1f)
                             .height(40.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF1E3A5F).copy(alpha = (0.4f + it * 0.1f)))
+                            .background(Brush.linearGradient(listOf(Color(0xFF1E3A5F).copy(alpha = (0.4f + it * 0.1f)), Color(0xFF1E3A5F).copy(alpha = (0.4f + it * 0.1f)))))
                     )
                 }
             }

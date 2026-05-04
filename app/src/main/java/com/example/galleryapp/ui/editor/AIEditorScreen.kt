@@ -63,14 +63,14 @@ fun AIEditorScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Brush.verticalGradient(listOf(Color.Black, Color(0xFF0A0A0A))))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
                 .align(Alignment.Center)
-                .background(Color(uiState.photoColor))
+                .background(Brush.linearGradient(listOf(Color(uiState.photoColor), Color(uiState.photoColor).copy(alpha = 0.85f))))
         )
 
         EditorTopBar(
@@ -141,7 +141,7 @@ private fun EditorTopBar(
         Box(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color.White.copy(alpha = 0.15f))
+                .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.18f), Color.White.copy(alpha = 0.12f))))
                 .clickable(onClick = onRevert)
                 .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {

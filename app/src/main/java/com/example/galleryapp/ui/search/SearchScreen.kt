@@ -114,7 +114,7 @@ fun SearchScreen(
                                 .aspectRatio(1f)
                                 .padding(1.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(Color(photo.placeholderColor))
+                                .background(Brush.linearGradient(listOf(Color(photo.placeholderColor), Color(photo.placeholderColor).copy(alpha = 0.85f))))
                                 .clickable { onPhotoClick(photo.id) }
                         )
                     }
@@ -143,14 +143,14 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = stringResource(R.string.content_desc_search),
-                tint = Color.White.copy(alpha = 0.87f),
+                tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
             Box(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 if (query.isEmpty()) {
                     Text(
                         text = stringResource(R.string.search_hint),
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = Color.White.copy(alpha = 0.87f),
                         fontSize = 15.sp
                     )
                 }
@@ -166,7 +166,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(R.string.close),
-                    tint = Color.White.copy(alpha = 0.87f),
+                    tint = Color.White,
                     modifier = Modifier
                         .size(18.dp)
                         .clickable { onQueryChange("") }
@@ -273,7 +273,7 @@ private fun ThingTile(name: String, color: Long) {
             .aspectRatio(1f)
             .padding(4.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(color))
+            .background(Brush.linearGradient(listOf(Color(color), Color(color).copy(alpha = 0.8f))))
     ) {
         Box(
             modifier = Modifier
@@ -313,7 +313,7 @@ private fun PlacesSection() {
                 Icon(
                     imageVector = Icons.Default.Place,
                     contentDescription = stringResource(R.string.content_desc_place_pin),
-                    tint = Color(0xFF8B5CF6),
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
                 Text(
@@ -348,7 +348,7 @@ private fun RecentSearchesSection() {
                 Icon(
                     imageVector = Icons.Default.Search,
                     contentDescription = null,
-                    tint = Color.White.copy(alpha = 0.5f),
+                    tint = Color.White,
                     modifier = Modifier.size(18.dp)
                 )
                 Text(

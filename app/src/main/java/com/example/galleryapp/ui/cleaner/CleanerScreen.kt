@@ -109,7 +109,7 @@ private fun CleanerTopBar(onBack: () -> Unit) {
             modifier = Modifier.weight(1f)
         )
         IconButton(onClick = {}) {
-            Icon(Icons.Default.Info, contentDescription = null, tint = Color.White)
+            Icon(Icons.Default.Info, contentDescription = stringResource(R.string.info), tint = Color.White)
         }
     }
 }
@@ -159,7 +159,7 @@ private fun StorageHeroCard(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .clip(RoundedCornerShape(20.dp))
-                        .background(Color.White)
+                        .background(Brush.linearGradient(listOf(Color.White, Color(0xFFF8F8F8))))
                         .clickable(onClick = onCleanNow)
                         .padding(horizontal = 20.dp, vertical = 10.dp)
                 ) {
@@ -182,14 +182,14 @@ private fun StorageBar(usedGb: Float, totalGb: Float) {
             .fillMaxWidth()
             .height(8.dp)
             .clip(RoundedCornerShape(4.dp))
-            .background(Color.White.copy(alpha = 0.3f))
+            .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.3f))))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth(fraction = (usedGb / totalGb).coerceIn(0f, 1f))
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(Color.White)
+                .background(Brush.linearGradient(listOf(Color.White, Color(0xFFF0F0F0))))
         )
     }
 }
@@ -207,14 +207,14 @@ private fun CleanerCategoryRow(category: CleanerCategory) {
             modifier = Modifier
                 .size(44.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(category.colorHex).copy(alpha = 0.2f)),
+                .background(Brush.linearGradient(listOf(Color(category.colorHex).copy(alpha = 0.2f), Color(category.colorHex).copy(alpha = 0.2f)))),
             contentAlignment = Alignment.Center
         ) {
             Box(
                 modifier = Modifier
                     .size(10.dp)
                     .clip(RoundedCornerShape(5.dp))
-                    .background(Color(category.colorHex))
+                    .background(Brush.linearGradient(listOf(Color(category.colorHex), Color(category.colorHex).copy(alpha = 0.85f))))
             )
         }
         Column(
@@ -233,7 +233,7 @@ private fun CleanerCategoryRow(category: CleanerCategory) {
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .clip(RoundedCornerShape(12.dp))
-                .background(Color(category.colorHex).copy(alpha = 0.2f))
+                .background(Brush.linearGradient(listOf(Color(category.colorHex).copy(alpha = 0.2f), Color(category.colorHex).copy(alpha = 0.2f))))
                 .clickable {}
                 .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {

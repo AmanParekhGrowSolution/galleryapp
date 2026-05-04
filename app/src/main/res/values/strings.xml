@@ -11,6 +11,7 @@
     <string name="tab_moments">Moments</string>
 
     <!-- Home -->
+    <string name="gallery_title">GALLERY</string>
     <string name="try_free">Try Free</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
@@ -156,6 +157,7 @@
     <string name="content_desc_search">Search</string>
     <string name="content_desc_more">More options</string>
     <string name="content_desc_menu">Open menu</string>
+    <string name="content_desc_grid_view">Toggle grid view</string>
     <string name="content_desc_close">Close</string>
     <string name="content_desc_photo">Photo thumbnail</string>
     <string name="content_desc_album_cover">Album cover</string>

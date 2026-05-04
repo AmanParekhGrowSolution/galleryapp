@@ -1,21 +1,22 @@
 package com.example.galleryapp.ui.navigation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
@@ -43,6 +44,8 @@ import com.example.galleryapp.ui.moments.MomentsScreen
 import com.example.galleryapp.ui.search.SearchScreen
 
 private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
+private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+private val navBgGradient = listOf(Color(0xFF0F0C29), Color(0xFF24243E))
 
 private data class TabItem(
     val route: String,
@@ -65,7 +68,7 @@ fun MainScreen(
 
     val tabs = listOf(
         TabItem(Screen.Home, Icons.Default.PhotoLibrary, R.string.tab_photos),
-        TabItem(Screen.Albums, Icons.Default.PhotoLibrary, R.string.tab_albums),
+        TabItem(Screen.Albums, Icons.Default.Collections, R.string.tab_albums),
         TabItem(Screen.Search, Icons.Default.Search, R.string.tab_search),
         TabItem(Screen.Moments, Icons.Default.AutoAwesome, R.string.tab_moments),
     )
@@ -80,7 +83,7 @@ fun MainScreen(
             startDestination = Screen.Home,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 64.dp)
+                .padding(bottom = 84.dp)
         ) {
             composable(Screen.Home) {
                 HomeScreen(
@@ -133,36 +136,52 @@ private fun BottomNavBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(Color(0xFF0F0C29).copy(alpha = 0.95f), Color(0xFF0F0C29))))
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .height(64.dp)
+            .padding(horizontal = 24.dp, vertical = 12.dp),
+        contentAlignment = Alignment.Center
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceAround,
+            modifier = Modifier
+                .background(
+                    Brush.linearGradient(navBgGradient),
+                    RoundedCornerShape(999.dp)
+                )
+                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             tabs.forEach { tab ->
                 val selected = currentRoute == tab.route
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                Box(
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
-                        .weight(1f)
+                        .then(
+                            if (selected)
+                                Modifier.background(Brush.linearGradient(primaryGradient), RoundedCornerShape(999.dp))
+                            else
+                                Modifier
+                        )
                         .clickable { onTabSelected(tab.route) }
-                        .padding(vertical = 8.dp)
+                        .padding(horizontal = if (selected) 16.dp else 14.dp, vertical = 10.dp)
                 ) {
-                    Icon(
-                        imageVector = tab.icon,
-                        contentDescription = stringResource(tab.labelRes),
-                        tint = if (selected) Color(0xFF8B5CF6) else Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Text(
-                        text = stringResource(tab.labelRes),
-                        color = if (selected) Color(0xFF8B5CF6) else Color.White.copy(alpha = 0.5f),
-                        fontSize = 10.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = tab.icon,
+                            contentDescription = stringResource(tab.labelRes),
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        if (selected) {
+                            Text(
+                                text = stringResource(tab.labelRes),
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(start = 6.dp)
+                            )
+                        }
+                    }
                 }
             }
         }

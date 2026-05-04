@@ -14,9 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -95,10 +93,10 @@ private fun AlbumsContent(
         item { SectionLabel(stringResource(R.string.featured)) }
         item { FeaturedGrid(albums = state.featured) }
         item { SectionLabel(stringResource(R.string.my_albums)) }
-        item { MyAlbumsRow(albums = state.myAlbums) }
+        item { MyAlbumsGrid(albums = state.myAlbums) }
         if (state.social.isNotEmpty()) {
             item { SectionLabel(stringResource(R.string.social_apps)) }
-            items(state.social) { album -> SocialAlbumRow(album = album) }
+            item { SocialAppsGrid(albums = state.social) }
         }
         item { SectionLabel(stringResource(R.string.utility)) }
         item { UtilitySection(onVaultClick = onVaultClick) }
@@ -189,53 +187,84 @@ private fun FeaturedAlbumTile(album: Album, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun MyAlbumsRow(albums: List<Album>) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+private fun MyAlbumsGrid(albums: List<Album>) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(albums) { album ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.width(90.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(90.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(
-                            Brush.linearGradient(
-                                listOf(Color(album.coverColor).copy(alpha = 0.8f), Color(album.coverColor))
-                            )
+        albums.chunked(3).forEach { rowAlbums ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowAlbums.forEach { album ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(album.coverColor).copy(alpha = 0.8f), Color(album.coverColor))
+                                    )
+                                )
+                                .clickable {}
                         )
-                        .clickable {}
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(album.name, color = Color.White, fontSize = 12.sp, maxLines = 1)
-                Text("${album.count}", color = Color.White.copy(alpha = 0.87f), fontSize = 11.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(album.name, color = Color.White, fontSize = 11.sp, maxLines = 1)
+                        Text("${album.count}", color = Color.White.copy(alpha = 0.87f), fontSize = 10.sp)
+                    }
+                }
+                repeat(3 - rowAlbums.size) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SocialAlbumRow(album: Album) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {}
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+private fun SocialAppsGrid(albums: List<Album>) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Brush.linearGradient(listOf(Color(album.coverColor).copy(alpha = 0.8f), Color(album.coverColor))))
-        )
-        Column(modifier = Modifier.padding(start = 12.dp)) {
-            Text(album.name, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Text("${album.count}", color = Color.White.copy(alpha = 0.87f), fontSize = 12.sp)
+        albums.chunked(2).forEach { rowAlbums ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowAlbums.forEach { album ->
+                    Row(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    listOf(Color(album.coverColor).copy(alpha = 0.10f), Color(album.coverColor).copy(alpha = 0.18f))
+                                )
+                            )
+                            .clickable {}
+                            .padding(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    Brush.linearGradient(
+                                        listOf(Color(album.coverColor).copy(alpha = 0.8f), Color(album.coverColor))
+                                    )
+                                )
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Text(album.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+                            Text("${album.count}", color = Color.White.copy(alpha = 0.87f), fontSize = 11.sp)
+                        }
+                    }
+                }
+                if (rowAlbums.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }

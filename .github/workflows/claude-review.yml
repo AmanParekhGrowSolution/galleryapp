@@ -1,0 +1,165 @@
+name: 🔍 Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  review:
+    name: Claude Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── Pre-review: run deterministic linter and save output ─────────────
+      - name: Run deterministic CLAUDE.md compliance check
+        id: linter
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          # Fetch the PR branch so the diff is available
+          git fetch origin ${{ github.event.pull_request.head.ref }}
+          git checkout ${{ github.event.pull_request.head.ref }}
+          git fetch origin ${{ github.event.pull_request.base.ref }}
+
+          bash scripts/check-claude-md.sh --diff origin/${{ github.event.pull_request.base.ref }} \
+            > /tmp/linter-output.txt 2>&1 || true
+
+          echo "linter_output<<EOF" >> "$GITHUB_OUTPUT"
+          cat /tmp/linter-output.txt >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Run Claude Review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 60
+            --permission-mode bypassPermissions
+            --debug-file ${{ runner.temp }}/claude-debug.json
+
+          prompt: |
+            You are reviewing PR #${{ github.event.pull_request.number }} in this Android Kotlin + Jetpack Compose repo.
+
+            ## Steps
+
+            1. Read `CLAUDE.md` at the repo root — it is the single source of truth for project rules.
+
+            2. Run `gh pr diff ${{ github.event.pull_request.number }}` and **read the full diff**.
+
+            3. **Form your own list of issues from the diff** — architecture, accessibility, scope creep, missing tests, and the judgment-call rules listed below. Do this BEFORE consulting the deterministic linter output in step 4, so your analysis is not anchored to what the linter already found. The linter only catches mechanical patterns; you are responsible for the architecture and accessibility issues it cannot see.
+
+            4. **Now consult the deterministic linter output** (already computed — do NOT re-run these checks):
+
+            ```
+            ${{ steps.linter.outputs.linter_output }}
+            ```
+
+            The linter has scanned every changed line for G1–G5, A1, S2, ARCH1, ARCH2. Its output is authoritative for those rules. **Append every line above verbatim to your blocking-violations list.** Do NOT spend turns re-checking gradient backgrounds, text alpha values, icon tints, touch targets, single-char separators, or ViewModel imports.
+
+            5. Evaluate the diff against the **judgment-call** rules below. Rules are split into
+               **BLOCKING** (fail the PR) and **ADVISORY** (leave a comment but do not block).
+
+            ---
+
+            ### BLOCKING rules you must check (not covered by the linter)
+
+            **Architecture (Section 3)**
+            - ViewModels must NOT hold an Activity/Fragment `Context` reference.
+            - UI layer must collect state with `collectAsStateWithLifecycle()`.
+            - Repository interfaces must live in `domain/repository/`; implementations in `data/repository/`.
+            - Domain models must not contain `android.*` imports.
+
+            **Accessibility (Section 7)**
+            - Every new `Image` or `Icon` must have a non-empty `contentDescription` (or `contentDescription = null`
+              with an explicit decorative `Role`). Missing contentDescription is blocking.
+
+            ---
+
+            ### ADVISORY rules — comment but do NOT block
+
+            **Null safety (Section 4)**
+            - Flag any new `!!` operator applied to a value from external input, network, or user
+              interaction. `!!` on values impossible-to-be-null by construction is acceptable.
+
+            **String resources (Section 5)**
+            - Multi-word user-visible UI strings (button labels, error messages, screen titles) should
+              live in `strings.xml`. Flag hardcoded UI strings as advisory.
+
+            **Testing (Section 6)**
+            - Flag (but do not block) if a non-trivial ViewModel or Repository with complex state
+              transitions has no unit test.
+
+            **Compose performance (Section 4)**
+            - Note if expensive calculations inside a composable are not wrapped in `remember {}`.
+            - Note if `derivedStateOf` could reduce unnecessary recompositions.
+
+            **Skill alignment**
+            - If the diff implements AdMob / ad-related code, note whether `android-admob` skill was used.
+            - If the diff replicates a UI screen from a design reference, note whether `android-ui-replicator` was used.
+
+            ---
+
+            6. Post inline comments for line-specific issues using the `mcp__github_inline_comment__create_inline_comment` tool.
+            7. Post one structured top-level summary comment via:
+               `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
+               Structure:
+               - ✅ **Passed checks** — list what was verified and passed
+               - ❌ **Blocking violations** — include ALL linter output lines verbatim, then add any architecture/accessibility violations you found
+               - ⚠️ **Advisory notes** — list non-blocking suggestions
+               - 📁 **Files reviewed** — list all changed files examined
+            8. **Apply a verdict label — this gates the merge:**
+               First remove any prior verdict:
+               `gh pr edit ${{ github.event.pull_request.number }} --remove-label "review: passed" --remove-label "review: blocked" 2>/dev/null || true`
+               Then apply the outcome:
+               - PASS (zero blocking violations AND linter output is empty/clean): `gh pr edit ${{ github.event.pull_request.number }} --add-label "review: passed"`
+               - FAIL (linter reported violations OR you found architecture/accessibility violations): `gh pr edit ${{ github.event.pull_request.number }} --add-label "review: blocked"`
+
+            Advisory-only issues never cause a FAIL verdict. Be accurate — do not block on advisory issues.
+
+      - name: Upload Claude debug log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-debug-review-pr${{ github.event.pull_request.number }}-run${{ github.run_id }}
+          path: ${{ runner.temp }}/claude-debug.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Enforce review verdict
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          LABELS=$(gh pr view ${{ github.event.pull_request.number }} \
+            --repo ${{ github.repository }} \
+            --json labels --jq '.labels[].name')
+          echo "PR labels: $LABELS"
+
+          if echo "$LABELS" | grep -q "review: blocked"; then
+            echo "❌ Claude review found blocking violations — merge is blocked"
+            exit 1
+          fi
+
+          if echo "$LABELS" | grep -q "review: passed"; then
+            echo "✅ Claude review passed — merge gate cleared"
+            exit 0
+          fi
+
+          echo "⚠️ No verdict label found — failing safe (Claude may have crashed)"
+          exit 1

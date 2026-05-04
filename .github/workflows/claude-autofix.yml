@@ -1,0 +1,261 @@
+name: 🔧 Claude Auto-Fix Review Violations
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  autofix:
+    name: Auto-fix Review Violations
+    if: "${{ github.event.label.name == 'review: blocked' }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    concurrency:
+      group: claude-autofix-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+
+    steps:
+      # ── 1. Check attempt count (max 3) ────────────────────────────────────
+      - name: Check attempt count
+        id: attempt_check
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          PRIOR=$(gh api "repos/$REPO/issues/$PR/labels" \
+            --jq '[.[] | select(.name | startswith("autofix: attempt-"))] | length')
+          NEXT=$((PRIOR + 1))
+          echo "attempt=$NEXT" >> "$GITHUB_OUTPUT"
+
+          if [ "$NEXT" -gt 8 ]; then
+            echo "max_reached=true" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/$PR/comments" \
+              -f body="## 🛑 Auto-fix gave up after 8 attempts
+
+          Claude tried to resolve the review violations 8 times without success. **Manual intervention required.**
+
+          Read the latest \`Claude Code Review\` comment + inline comments and fix manually."
+          else
+            echo "max_reached=false" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/$PR/labels" \
+              -f "labels[]=autofix: attempt-$NEXT"
+          fi
+
+      # ── 2. Checkout the PR branch (write-capable) ─────────────────────────
+      - name: Checkout PR branch
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.AGENT_PAT }}
+
+      # ── 3. JDK so Claude can verify with ./gradlew ────────────────────────
+      - name: Set up JDK 17
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Cache Gradle
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Grant Gradle permission
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: chmod +x gradlew
+
+      # ── 4. Configure git identity for the agent's commit ──────────────────
+      - name: Configure git
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: |
+          git config user.name  "claude-autofix[bot]"
+          git config user.email "claude-autofix@users.noreply.github.com"
+
+      # ── 5. Run Claude to fix the violations ───────────────────────────────
+      - name: Run Claude Auto-Fix
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 80
+            --permission-mode bypassPermissions
+            --debug-file ${{ runner.temp }}/claude-debug.json
+
+          prompt: |
+            You are auto-fixing CLAUDE.md violations on PR #${{ github.event.pull_request.number }}.
+            This is **attempt ${{ steps.attempt_check.outputs.attempt }} of 8**.
+
+            ## Available skills
+
+            This repo ships project-local skills at `.claude/skills/`. Auto-invoke them via
+            the `Skill` tool whenever the fix involves:
+
+            - **`android-admob`** — use when the violation is in AdMob / ad-related code.
+              The skill encodes the correct Koin-DI wiring and Play Store policy guardrails
+              — do not hand-patch ad code without invoking it.
+            - **`android-ui-replicator`** — use when the violation is in a screen that was
+              originally replicated from a screenshot.
+
+            If a skill matches, invoke it BEFORE rewriting the violating code.
+
+            ## Context
+
+            The Claude Code Review workflow flagged blocking violations on this PR.
+            Your job is to fix them in the same branch and push.
+
+            ## Steps
+
+            1. Read `CLAUDE.md` at the repo root — it is the source of truth for project rules.
+
+            2. Read the **most recent** review summary comment:
+               ```
+               gh pr view ${{ github.event.pull_request.number }} --json comments \
+                 --jq '[.comments[] | select(.body | contains("Claude Code Review") or contains("PR Review") or contains("CLAUDE.md Compliance") or contains("Code Review")) ] | last | .body'
+               ```
+
+            3. Read all **inline** review comments (file + line + body):
+               ```
+               gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments \
+                 --jq '[.[] | {path: .path, line: .line, body: .body}]'
+               ```
+
+            3a. **Plan the rule-class sweep — POST BEFORE EDITING.** After reading the review comments but before any Edit/Write tool call, post a comment:
+               ```
+               gh pr comment ${{ github.event.pull_request.number }} --body "..."
+               ```
+               The comment body must contain:
+               ```
+               ## Autofix plan (attempt N)
+               **Rule classes flagged:** <e.g. G1 flat background, G3 alpha 0.5f, S2 ":">
+               **Every occurrence in changed files (by rule class):**
+                 - G1: <grep '\.background(Color' result -> file:line list>
+                 - G3: <grep result>
+                 - <one line per rule class>
+               **Every UI surface in changed files:** <enumerate every Box / Card / Surface / Row / Column including nested decorative surfaces — drag handles, pills, badges, dividers, chip backgrounds, tab indicators. These are the surfaces that get introduced during fixes and then themselves violate G1.>
+               **Color/tint parameters threaded through changed composables:** <list>
+               **NEW sub-components I plan to introduce as part of the fix:** <list, or "none" — for each new sub-component, declare its background up front>
+               **Test files I expect to update:** <list>
+               ```
+               Vague plans ("fix all G1 violations") are not acceptable — enumerate every site by file:line.
+
+            4. **Fix every blocking violation using a rule-class sweep — not just the flagged lines.**
+
+               For each blocking violation in the review comment:
+               - Identify the **rule class** (e.g. "text alpha ≠ 0.87f", "flat solid background",
+                 "icon tint has alpha", "hardcoded separator", "touch target < 48 dp").
+               - `grep` **all changed files in the PR diff** for every other instance of the same
+                 rule class. Fix ALL matches, not just the specific lines the reviewer mentioned.
+                 The reviewer samples; you must sweep every instance.
+
+               **Scope-creep guard:** When fixing a violation, do NOT wrap the violating element in a
+               new Box/Card/Surface unless the parent layout genuinely requires it. Most G1/G3/G4
+               fixes are in-place edits to the existing modifier chain. Every new sub-component you
+               introduce is a fresh surface that can itself violate G1 — PR #28 ran 7 attempts
+               chasing exactly this pattern. If you must introduce a new sub-component, declare it
+               in the plan comment (step 3a) AND apply `Brush.*` to it in the same edit.
+
+               Stay within scope — do NOT touch files that were not changed in this PR.
+               Do NOT edit `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`,
+               or top-level `build.gradle*`.
+
+            4a. **Self-critique against plan.** Run `git diff origin/main` and walk through every
+               enumerated item in the plan comment:
+               - For each NEW Box/Card/Surface introduced by your fix, verify it uses `Brush.*` and
+                 was declared in the plan; if not, update the plan comment AND fix the surface.
+               - For any `color`/`tint` parameter in the diff that was not listed in the plan,
+                 trace the value to the call site and verify it resolves to `Color.White`.
+               Only proceed to step 5 once the diff matches the plan.
+
+            5. After fixing, run the deterministic compliance script and resolve every line it reports:
+               ```
+               bash scripts/check-claude-md.sh --diff origin/main
+               ```
+               Fix any remaining violations before continuing. **Do not proceed to step 6 if this exits non-zero.**
+
+            6. Verify build and tests:
+               - `./gradlew assembleDebug` — must compile
+               - `./gradlew test` — must pass
+
+            7. Commit + push to the PR branch:
+               ```
+               git add -A
+               git commit -m "fix: address Claude review violations (autofix attempt ${{ steps.attempt_check.outputs.attempt }})"
+               git push
+               ```
+
+            8. Remove the blocking label so the next review run starts clean:
+               ```
+               gh pr edit ${{ github.event.pull_request.number }} --remove-label "review: blocked"
+               ```
+
+            9. Post a brief status comment:
+               ```
+               gh pr comment ${{ github.event.pull_request.number }} --body "🔧 Autofix attempt ${{ steps.attempt_check.outputs.attempt }} pushed. Re-running Claude review..."
+               ```
+
+            Pushing will automatically retrigger `claude-review.yml`. If your fix is
+            correct, the next review will apply `review: passed` and auto-merge proceeds.
+
+            If you genuinely cannot fix a violation (e.g. the rule conflicts with
+            another rule), do NOT push a no-op commit — instead post a comment
+            explaining why and exit. The attempt cap will then guard against loops.
+
+      # ── 6. Upload Claude debug log ────────────────────────────────────────────
+      - name: Upload Claude debug log
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-debug-autofix-pr${{ github.event.pull_request.number }}-attempt${{ steps.attempt_check.outputs.attempt }}-run${{ github.run_id }}
+          path: ${{ runner.temp }}/claude-debug.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ── 7. Deterministic compliance gate (runs after Claude's edits) ────────
+      # If the LLM only fixed the flagged lines and missed other instances of
+      # the same rule, this step catches them before a push happens.
+      - name: Verify CLAUDE.md compliance (deterministic)
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: |
+          bash scripts/check-claude-md.sh --diff origin/main \
+            || {
+              echo "::error::Deterministic linter still finds violations. The autofix must sweep ALL instances of each rule class, not just the lines flagged by the reviewer. See output above."
+              exit 1
+            }
+
+      # ── 7. Failure comment ────────────────────────────────────────────────
+      - name: Post failure comment
+        if: failure() && steps.attempt_check.outputs.max_reached == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh api -X POST "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -f body="## ⚠️ Autofix attempt ${{ steps.attempt_check.outputs.attempt }} crashed
+
+          The autofix workflow itself errored. [View logs]($RUN_URL).
+
+          Re-add the \`review: blocked\` label to retry, or fix manually."

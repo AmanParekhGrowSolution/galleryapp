@@ -1,0 +1,244 @@
+name: 🤖 Claude Code Agent
+
+on:
+  issues:
+    types: [labeled]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  claude-agent:
+    name: "🤖 Claude — ${{ github.event.label.name }}"
+    if: |
+      github.event.label.name == 'claude: fix' ||
+      github.event.label.name == 'claude: implement'
+
+    concurrency:
+      group: claude-agent-issue-${{ github.event.issue.number }}
+      cancel-in-progress: true
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      # ── 1. Checkout ───────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. JDK (so Claude can run ./gradlew to verify its own code) ───────
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Cache Gradle
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Grant Gradle permission
+        run: chmod +x gradlew
+
+      # ── 3. Signal start on issue ──────────────────────────────────────────
+      - name: Post "agent activated" comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: [
+                '## 🤖 Claude Code Agent Activated',
+                '',
+                `Analysing **Issue #${{ github.event.issue.number }}** — implementing changes and opening a PR shortly.`,
+                '',
+                '| Step | Status |',
+                '|------|--------|',
+                '| Read codebase & plan | ⏳ |',
+                '| Implement changes    | ⏳ |',
+                '| Run build check      | ⏳ |',
+                '| Create PR            | ⏳ |',
+                '| Auto-merge (CI gate) | ⏳ |',
+              ].join('\n'),
+            });
+
+      # ── 4. Run Claude Code Agent (OAuth — no API key needed) ──────────────
+      - name: Run Claude Code Agent
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 100
+            --permission-mode bypassPermissions
+            --debug-file ${{ runner.temp }}/claude-debug.json
+
+          prompt: |
+            You are an autonomous Android coding agent triggered by GitHub Issue #${{ github.event.issue.number }}.
+
+            ## Issue Details
+            **Title:** ${{ github.event.issue.title }}
+            **Label:** ${{ github.event.label.name }}
+            **Type:** ${{ contains(github.event.label.name, 'fix') && 'Bug Fix' || 'Feature' }}
+
+            **Description:**
+            ${{ github.event.issue.body }}
+
+            ## Available skills
+
+            This repo ships project-local skills at `.claude/skills/`. Auto-invoke them via
+            the `Skill` tool whenever the issue matches:
+
+            - **`android-admob`** — use when the issue asks to add ads / monetize / integrate
+              AdMob / banner / interstitial / app-open / rewarded ads, or mentions a
+              `ca-app-pub-...` ID. The skill encodes the full Koin-DI wiring + Play Store
+              policy guardrails — do not hand-roll AdMob code.
+            - **`android-ui-replicator`** — use when the issue includes a screenshot or
+              design reference and asks to replicate / clone / rebuild / convert a screen
+              into Kotlin + XML.
+
+            If a skill matches, invoke it BEFORE writing code — its workflow supersedes
+            the generic "Implement" step below for that subtask.
+
+            ## Scope rules — STRICT
+
+            - Only modify files needed to satisfy the issue's stated acceptance criteria.
+            - **Never edit files under `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`, or top-level `build.gradle*`** unless the issue explicitly asks you to. Workflow and build configuration are off-limits.
+            - Do not "improve" or "fix" unrelated code you happen to read along the way. If something looks wrong but is out of scope, mention it in the PR description instead of changing it.
+
+            ## Instructions
+
+            1. **Explore** the codebase — use `find`, `cat`, `Read`, `Grep` to understand the structure and patterns.
+
+            2. **Plan — POST BEFORE EDITING.** Before any Edit/Write tool call, post a comment on issue #${{ github.event.issue.number }} with the following structure (use `gh issue comment ${{ github.event.issue.number }} --body "..."`):
+
+               ```
+               ## Implementation plan (pre-edit)
+               **Files I will modify:** <full list with paths>
+               **Every UI surface I will create or touch:** <enumerate every Box / Card / Surface / Row / Column that will receive a .background(...) — INCLUDE nested decorative surfaces: drag handles, pills, badges, dividers, chips, tab indicators. These are the surfaces that autofix loops keep missing.>
+               **Every gradient I will use:** <surface name -> Brush.linearGradient/verticalGradient + token from CLAUDE.md §2 (Primary/Accent/Success/Warning/Error/Background)>
+               **Every Color parameter I will thread:** <e.g. `color: Color` passed parent->child, `tint: Color` threaded through helpers — list every Color param crossing a composable boundary so the `color = color` violation pattern is caught before it compiles>
+               **State-shape changes:** <UiState fields added/renamed/removed; downstream ViewModel + Test files that must update in the same PR>
+               **Hardcoded glyphs / separators:** <none, OR: list with the strings.xml key each will become>
+               **Tests I will add or update:** <full file list>
+               ```
+
+               The plan must be concrete — "Update UI" or "fix all violations" is not acceptable. If implementation reveals the plan was wrong, update the comment before continuing.
+
+            3. **Read `CLAUDE.md`** at the repo root — it contains mandatory gradient design rules and architecture you MUST follow.
+
+            4. **Implement** the ${{ contains(github.event.label.name, 'fix') && 'bug fix' || 'feature' }}:
+               - ALL new UI must use `Brush.linearGradient` / `verticalGradient` — flat colours are forbidden
+               - Follow MVVM: ViewModel → UiState sealed class → stateless composables
+               - Write unit tests for any new ViewModel or Repository logic
+               - Add `contentDescription` to every Icon and Image
+               - No `!!` operators
+
+            5. **Verify** — run `./gradlew assembleDebug` and fix any compile errors. Then run `./gradlew test`.
+
+            5a. **Self-critique against plan.** Run `git diff origin/main` and walk through every enumerated item in the plan comment:
+               - Does the diff contain the change? If not, why?
+               - Did your edits introduce any NEW Box/Card/Surface/Row/Column that was NOT in the enumeration? If yes, treat it as a plan miss — verify it uses `Brush.*` not a flat `Color`, and update the plan comment.
+               - Did any `color`/`tint` parameter appear in the diff that was not listed in the plan? Trace the parameter end-to-end and verify the value at every call site.
+               Only proceed to step 5b once every diff item maps to a plan entry.
+
+            5b. **Run the deterministic CLAUDE.md compliance linter** and fix every line it reports before opening the PR:
+                ```
+                bash scripts/check-claude-md.sh --diff origin/main
+                ```
+                **Do not push if this exits non-zero.** Common violations it catches:
+                - `[G1]` flat solid background (single-line and multi-line `.background(Color...)`) — use `Brush.linearGradient`
+                - `[G3]` text alpha ≠ 0.87f — `Text(color = Color.White.copy(alpha = 0.5f))` must be `0.87f`
+                - `[G4]` icon tint has alpha — must be `tint = Color.White`
+                - `[G5]` `color`/`tint` parameter threaded without a `Color.White` literal — verify the caller value
+                - `[A1]` `IconButton` touch target < 48 dp
+                - `[S2]` single-char hardcoded separator like `Text(":")` — move to `strings.xml`
+                - `[ARCH2]` `.collectAsState()` — must be `.collectAsStateWithLifecycle()`
+
+            6. **Create a branch** named:
+               `claude/${{ contains(github.event.label.name, 'fix') && 'fix' || 'feat' }}-issue-${{ github.event.issue.number }}-<short-description>`
+
+            7. **Commit** all changes with message:
+               `${{ contains(github.event.label.name, 'fix') && 'fix' || 'feat' }}: <description> (#${{ github.event.issue.number }})`
+
+            8. **Open a PR** targeting `main` with:
+               - Title matching the commit message
+               - Body with: Summary, list of changed files, testing notes
+               - Footer: `Closes #${{ github.event.issue.number }}`
+
+            9. **Comment on the issue** with the PR link.
+
+            10. **Enable auto-merge** on the PR you just opened:
+               `gh pr merge <PR_URL_OR_NUMBER> --auto --squash --delete-branch`
+               This queues the PR to merge automatically once all CI checks pass.
+
+            If the scope is unclear, comment on the issue asking for clarification — do NOT create a PR with guesswork.
+
+      # ── 5. Upload Claude debug log ────────────────────────────────────────────
+      - name: Upload Claude debug log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-debug-agent-${{ github.event.issue.number }}-run${{ github.run_id }}
+          path: ${{ runner.temp }}/claude-debug.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ── 6. Deterministic CLAUDE.md compliance gate ───────────────────────────
+      # Catches gradient/alpha/tint/separator/architecture violations that the
+      # LLM may have missed. Fails the workflow before the PR is opened, so the
+      # agent must address every match rather than pushing a violating branch.
+      - name: Verify CLAUDE.md compliance (deterministic)
+        if: success()
+        run: |
+          bash scripts/check-claude-md.sh --diff origin/main \
+            || {
+              echo "::error::Deterministic linter found CLAUDE.md violations in the agent's changes. Review the output above and fix all flagged lines before opening a PR."
+              exit 1
+            }
+
+      # ── 6. Add "implemented" label (fallback) ─────────────────────────────
+      - name: Add implemented label
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              await github.rest.issues.addLabels({
+                owner:        context.repo.owner,
+                repo:         context.repo.repo,
+                issue_number: ${{ github.event.issue.number }},
+                labels:       ['claude: implemented'],
+              });
+            } catch (e) { console.log(e.message); }
+
+      # ── 6. Post failure comment ───────────────────────────────────────────
+      - name: Post failure comment
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            await github.rest.issues.createComment({
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: ${{ github.event.issue.number }},
+              body: `## ❌ Claude Agent Failed\n\n[View the Actions log](${runUrl}) for details.\n\nTo retry: remove the label and re-add it.`,
+            });

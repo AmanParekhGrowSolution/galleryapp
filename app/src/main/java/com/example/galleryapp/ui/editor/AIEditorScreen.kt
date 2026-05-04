@@ -63,7 +63,7 @@ fun AIEditorScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Color.Black, Color(0xFF0A0A0A))))
+            .background(Brush.verticalGradient(bgGradient))
     ) {
         Box(
             modifier = Modifier

@@ -1,5 +1,6 @@
 <resources>
-    <string name="app_name">galleryapp</string>
+    <string name="app_name">GalleryApp</string>
     <string name="hello_message">Hello, CI/CD is working correctly</string>
     <string name="hello_subtitle">Android · Jetpack Compose</string>
+    <string name="hello_version">v1.0.0 · Build preview</string>
 </resources>

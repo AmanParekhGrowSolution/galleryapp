@@ -133,6 +133,10 @@
     <string name="map_title">Map</string>
     <string name="photos_label">%1$d photos</string>
     <string name="view">View</string>
+    <string name="zoom_in">Zoom in</string>
+    <string name="zoom_out">Zoom out</string>
+    <string name="change_map_layers">Change map layers</string>
+    <string name="my_location">My location</string>
 
     <!-- Common -->
     <string name="sort">Sort</string>

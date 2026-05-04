@@ -160,15 +160,15 @@ private fun MapControls(modifier: Modifier = Modifier) {
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        MapControlButton(icon = Icons.Default.Add, onClick = {})
-        MapControlButton(icon = Icons.Default.Remove, onClick = {})
-        MapControlButton(icon = Icons.Default.Layers, onClick = {})
-        MapControlButton(icon = Icons.Default.GpsFixed, onClick = {})
+        MapControlButton(icon = Icons.Default.Add, contentDescription = stringResource(R.string.zoom_in), onClick = {})
+        MapControlButton(icon = Icons.Default.Remove, contentDescription = stringResource(R.string.zoom_out), onClick = {})
+        MapControlButton(icon = Icons.Default.Layers, contentDescription = stringResource(R.string.change_map_layers), onClick = {})
+        MapControlButton(icon = Icons.Default.GpsFixed, contentDescription = stringResource(R.string.my_location), onClick = {})
     }
 }
 
 @Composable
-private fun MapControlButton(icon: androidx.compose.ui.graphics.vector.ImageVector, onClick: () -> Unit) {
+private fun MapControlButton(icon: androidx.compose.ui.graphics.vector.ImageVector, contentDescription: String?, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -177,7 +177,7 @@ private fun MapControlButton(icon: androidx.compose.ui.graphics.vector.ImageVect
             .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.15f))))
             .clickable(onClick = onClick)
     ) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+        Icon(icon, contentDescription = contentDescription, tint = Color.White, modifier = Modifier.size(18.dp))
     }
 }
 

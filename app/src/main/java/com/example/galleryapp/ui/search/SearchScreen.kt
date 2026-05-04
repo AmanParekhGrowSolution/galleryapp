@@ -50,11 +50,11 @@ private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF
 private val accentGradient = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6))
 
 private val peopleSamples = listOf("You", "Sara", "Arjun", "Mom", "+ Tag")
-private val thingsSamples = listOf("Beach", "Food", "Selfies", "Documents", "Sunset", "Pets")
-private val placesSamples = listOf("Mumbai 247", "Goa 64", "Bengaluru 38")
+private val thingsSamples = listOf("Landscapes", "Clouds", "Food", "Coasts", "Pets", "Cars", "Tips")
+private val placesSamples = listOf("Mumbai 247", "Goa 64", "Rajasthan 38", "Kolkata 21")
 private val recentSearches = listOf("Sunset goa", "Mom birthday", "Receipts march")
 private val thingColors = listOf(
-    0xFF1F4D5CL, 0xFF5C3D1FL, 0xFF2D5A27L, 0xFF3D1F5CL, 0xFF5C2A1FL, 0xFF1F3B3BL
+    0xFF1F4D5CL, 0xFF2D5A27L, 0xFF5C3D1FL, 0xFF1E3A5FL, 0xFF5C2A1FL, 0xFF3D1F5CL, 0xFF1F3B3BL
 )
 
 @Composable
@@ -195,13 +195,13 @@ private fun AIHintCard() {
             )
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 Text(
-                    text = "AI Search · Offline",
+                    text = stringResource(R.string.browse_offline),
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Try 'dog at the beach'",
+                    text = stringResource(R.string.browse_offline_hint),
                     color = Color.White.copy(alpha = 0.87f),
                     fontSize = 12.sp
                 )

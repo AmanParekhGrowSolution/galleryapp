@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class PhotoFilter { All, Photos, Videos, Screenshots, GIFs, RAW }
+enum class PhotoFilter { All, Videos, Screenshots, GIFs }
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState

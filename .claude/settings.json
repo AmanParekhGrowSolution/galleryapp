@@ -28,5 +28,23 @@
       "Bash(ls *)",
       "Bash(jq *)"
     ]
+  },
+  "enabledPlugins": {
+    "android-skills@rcosteira79": true,
+    "compose-expert@aldefy": true
+  },
+  "extraKnownMarketplaces": {
+    "rcosteira79": {
+      "source": {
+        "source": "github",
+        "repo": "rcosteira79/android-skills"
+      }
+    },
+    "aldefy": {
+      "source": {
+        "source": "github",
+        "repo": "aldefy/compose-skill"
+      }
+    }
   }
 }

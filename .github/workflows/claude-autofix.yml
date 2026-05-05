@@ -150,33 +150,37 @@ jobs:
                The comment body must contain:
                ```
                ## Autofix plan (attempt N)
-               **Rule classes flagged:** <e.g. G1 flat background, G3 alpha 0.5f, S2 ":">
+               **Rule classes flagged:** <e.g. SEC1 cleartext URL, ARCH2 collectAsState, S2 ":">
                **Every occurrence in changed files (by rule class):**
-                 - G1: <grep '\.background(Color' result -> file:line list>
-                 - G3: <grep result>
+                 - SEC1: <grep '"http://' result -> file:line list>
+                 - ARCH2: <grep '\.collectAsState()' result -> file:line list>
                  - <one line per rule class>
-               **Every UI surface in changed files:** <enumerate every Box / Card / Surface / Row / Column including nested decorative surfaces — drag handles, pills, badges, dividers, chip backgrounds, tab indicators. These are the surfaces that get introduced during fixes and then themselves violate G1.>
+               **Every UI surface in changed files:** <enumerate every Box / Card / Surface / Row / Column including nested decorative surfaces — drag handles, pills, badges, dividers, chip backgrounds, tab indicators. These are the surfaces that fixes commonly miss; enumerate them up front.>
                **Color/tint parameters threaded through changed composables:** <list>
                **NEW sub-components I plan to introduce as part of the fix:** <list, or "none" — for each new sub-component, declare its background up front>
                **Test files I expect to update:** <list>
                ```
-               Vague plans ("fix all G1 violations") are not acceptable — enumerate every site by file:line.
+               Vague plans ("fix all violations") are not acceptable — enumerate every site by file:line.
 
-            4. **Fix every blocking violation using a rule-class sweep — not just the flagged lines.**
+            4. **Fix every BLOCKING violation using a rule-class sweep — not just the flagged lines.**
 
-               For each blocking violation in the review comment:
-               - Identify the **rule class** (e.g. "text alpha ≠ 0.87f", "flat solid background",
-                 "icon tint has alpha", "hardcoded separator", "touch target < 48 dp").
+               The linter output uses `[BLOCKING]` and `[ADVISORY]` severity tags.
+               - Fix ALL `[BLOCKING]` violations — these prevent merge.
+               - `[ADVISORY]` violations are informational only — do NOT fix them unless the reviewer explicitly asked you to.
+
+               For each BLOCKING violation in the review comment:
+               - Identify the **rule class** (e.g. SEC1 "cleartext http://", SEC2 "hardcoded credential",
+                 SEC6 "deprecated crypto", ARCH2 "collectAsState", A1 "touch target < 48dp").
                - `grep` **all changed files in the PR diff** for every other instance of the same
                  rule class. Fix ALL matches, not just the specific lines the reviewer mentioned.
                  The reviewer samples; you must sweep every instance.
 
                **Scope-creep guard:** When fixing a violation, do NOT wrap the violating element in a
-               new Box/Card/Surface unless the parent layout genuinely requires it. Most G1/G3/G4
-               fixes are in-place edits to the existing modifier chain. Every new sub-component you
-               introduce is a fresh surface that can itself violate G1 — PR #28 ran 7 attempts
+               new Box/Card/Surface unless the parent layout genuinely requires it. Most fixes are
+               in-place edits to the existing modifier chain or code structure. Every new sub-component
+               you introduce can itself trigger other rule violations — past PRs ran 7+ autofix attempts
                chasing exactly this pattern. If you must introduce a new sub-component, declare it
-               in the plan comment (step 3a) AND apply `Brush.*` to it in the same edit.
+               in the plan comment (step 3a) and verify it is clean before pushing.
 
                Stay within scope — do NOT touch files that were not changed in this PR.
                Do NOT edit `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`,
@@ -184,17 +188,18 @@ jobs:
 
             4a. **Self-critique against plan.** Run `git diff origin/main` and walk through every
                enumerated item in the plan comment:
-               - For each NEW Box/Card/Surface introduced by your fix, verify it uses `Brush.*` and
-                 was declared in the plan; if not, update the plan comment AND fix the surface.
+               - For each NEW Box/Card/Surface introduced by your fix, verify it was declared
+                 in the plan and is CLAUDE.md compliant; if not, update the plan comment AND fix the surface.
                - For any `color`/`tint` parameter in the diff that was not listed in the plan,
-                 trace the value to the call site and verify it resolves to `Color.White`.
+                 trace the value to the call site and verify it does not introduce a new violation.
                Only proceed to step 5 once the diff matches the plan.
 
-            5. After fixing, run the deterministic compliance script and resolve every line it reports:
+            5. After fixing, run the deterministic compliance script:
                ```
                bash scripts/check-claude-md.sh --diff origin/main
                ```
-               Fix any remaining violations before continuing. **Do not proceed to step 6 if this exits non-zero.**
+               The script exits non-zero only on `[BLOCKING]` violations. **Do not proceed to step 6 if this exits non-zero.**
+               `[ADVISORY]` lines in the output are informational — they do not block CI and you do not need to fix them in this autofix pass.
 
             6. Verify build and tests:
                - `./gradlew assembleDebug` — must compile
@@ -242,7 +247,7 @@ jobs:
         run: |
           bash scripts/check-claude-md.sh --diff origin/main \
             || {
-              echo "::error::Deterministic linter still finds violations. The autofix must sweep ALL instances of each rule class, not just the lines flagged by the reviewer. See output above."
+              echo "::error::Deterministic linter still finds BLOCKING violations (A1, S2, ARCH1-2, SEC1-SEC10). The autofix must sweep ALL instances of each rule class, not just the lines flagged by the reviewer. Advisory violations (P1-P3, LC1-LC3, PRIV1-2) do not fail this gate. See output above."
               exit 1
             }
 

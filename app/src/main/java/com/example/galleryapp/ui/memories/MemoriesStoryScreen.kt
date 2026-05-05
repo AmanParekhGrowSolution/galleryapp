@@ -38,6 +38,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -195,7 +198,7 @@ private fun StoryTopBar(
                 imageVector = Icons.Default.Stars,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(14.dp).semantics { role = Role.Image },
             )
         }
         Spacer(Modifier.width(10.dp))

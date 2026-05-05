@@ -52,6 +52,7 @@ private val darkOverlay = listOf(Color.Transparent, Color(0xCC000000))
 fun MomentsScreen(
     onMapClick: () -> Unit,
     onPhotoClick: (Long) -> Unit,
+    onStoryClick: () -> Unit = {},
     viewModel: MomentsViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,7 +65,7 @@ fun MomentsScreen(
         LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
             item { MomentsTopBar() }
             item { OnThisDayCard() }
-            item { RecentStoriesRow(stories = state.stories) }
+            item { RecentStoriesRow(stories = state.stories, onStoryClick = onStoryClick) }
             item {
                 SectionLabel(stringResource(R.string.people))
                 PeopleRow(people = state.people)
@@ -175,7 +176,7 @@ private fun OnThisDayCard() {
 }
 
 @Composable
-private fun RecentStoriesRow(stories: List<MomentStory>) {
+private fun RecentStoriesRow(stories: List<MomentStory>, onStoryClick: () -> Unit = {}) {
     Column {
         SectionLabel("Recent Stories")
         LazyRow(
@@ -189,7 +190,7 @@ private fun RecentStoriesRow(stories: List<MomentStory>) {
                         .aspectRatio(3f / 4f)
                         .clip(RoundedCornerShape(14.dp))
                         .background(Brush.linearGradient(listOf(Color(story.colorHex), Color(story.colorHex).copy(alpha = 0.8f))))
-                        .clickable {}
+                        .clickable { onStoryClick() }
                 ) {
                     Box(
                         modifier = Modifier

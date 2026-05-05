@@ -18,7 +18,15 @@ object Screen {
     const val Backup = "backup"
     const val PhotoViewer = "photo_viewer/{photoId}"
     const val AIEditor = "ai_editor/{photoId}"
+    const val VideoPlayer = "video_player/{photoId}"
+    const val VideoTrimmer = "video_trimmer/{photoId}"
+    const val MemoriesStory = "memories_story"
+    const val CollageMaker = "collage_maker"
+    const val Slideshow = "slideshow"
+    const val AppLockSetup = "app_lock_setup"
 
     fun photoViewer(photoId: Long) = "photo_viewer/$photoId"
     fun aiEditor(photoId: Long) = "ai_editor/$photoId"
+    fun videoPlayer(photoId: Long) = "video_player/$photoId"
+    fun videoTrimmer(photoId: Long) = "video_trimmer/$photoId"
 }

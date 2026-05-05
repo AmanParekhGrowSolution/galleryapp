@@ -185,6 +185,59 @@
     <string name="add">Add</string>
     <string name="move_out">Move out</string>
 
+    <!-- Video Player -->
+    <string name="video_filename">VID_20240409_142733</string>
+    <string name="video_metadata">Camera · 1080p · 24 MB</string>
+    <string name="video_extract_frame">Extract frame</string>
+    <string name="video_play">Play</string>
+    <string name="video_pause">Pause</string>
+    <string name="video_seek_back">Rewind 10 seconds</string>
+    <string name="video_seek_forward">Fast-forward 10 seconds</string>
+    <string name="video_sound">Sound</string>
+    <string name="video_muted">Muted</string>
+    <string name="video_pip">Picture in Picture</string>
+    <string name="video_lock">Lock screen</string>
+    <string name="video_cast">Cast</string>
+
+    <!-- Video Trimmer -->
+    <string name="trim_video_title">Trim Video</string>
+    <string name="trim_selected">selected</string>
+    <string name="trim_tool_trim">Trim</string>
+    <string name="trim_tool_frame">Frame</string>
+    <string name="trim_tool_speed">Speed</string>
+    <string name="trim_tool_mute">Mute</string>
+    <string name="trim_tool_split">Split</string>
+
+    <!-- Memories Story -->
+    <string name="memories_title">Memories</string>
+    <string name="story_of">of</string>
+    <string name="story_mute_notifications">Mute notifications</string>
+    <string name="story_send_message">Send a message</string>
+
+    <!-- Collage Maker -->
+    <string name="collage_title">Collage</string>
+    <string name="collage_tab_layout">Layout</string>
+    <string name="collage_tab_ratio">Ratio</string>
+    <string name="collage_tab_background">Background</string>
+    <string name="collage_tab_spacing">Spacing</string>
+    <string name="collage_border">Border</string>
+    <string name="collage_corner_radius">Round corners</string>
+
+    <!-- Slideshow -->
+    <string name="slideshow_playing">Playing</string>
+    <string name="slideshow_paused">Paused</string>
+    <string name="slideshow_settings">Slideshow settings</string>
+    <string name="slideshow_caption">Sunday afternoon at the lake</string>
+
+    <!-- App Lock Setup -->
+    <string name="app_lock_setup_title">Set app lock</string>
+    <string name="app_lock_create_title">Create a 4-digit PIN</string>
+    <string name="app_lock_create_subtitle">Required to open GalleryApp and unlock the private vault</string>
+    <string name="app_lock_confirm_title">Confirm your PIN</string>
+    <string name="app_lock_confirm_subtitle">Enter the same PIN again to confirm</string>
+    <string name="app_lock_biometric">Also use fingerprint</string>
+    <string name="app_lock_confirm_pin">Confirm PIN</string>
+
     <!-- Content descriptions -->
     <string name="content_desc_back">Back</string>
     <string name="content_desc_settings">Settings</string>

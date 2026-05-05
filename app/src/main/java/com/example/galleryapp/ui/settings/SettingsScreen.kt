@@ -63,6 +63,7 @@ fun SettingsScreen(
     onNavigateToTrash: () -> Unit = {},
     onNavigateToStorage: () -> Unit = {},
     onNavigateToBackup: () -> Unit = {},
+    onNavigateToAppLock: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -98,7 +99,9 @@ fun SettingsScreen(
                     label = stringResource(R.string.app_lock),
                     subtitle = null,
                     checked = uiState.appLockEnabled,
-                    onToggle = viewModel::toggleAppLock
+                    onToggle = {
+                        if (!uiState.appLockEnabled) onNavigateToAppLock() else viewModel.toggleAppLock()
+                    }
                 )
                 SettingsToggleRow(
                     icon = Icons.Default.Security,

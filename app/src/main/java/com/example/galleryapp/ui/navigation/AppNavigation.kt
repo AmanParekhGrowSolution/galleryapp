@@ -8,15 +8,21 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.galleryapp.ui.backup.BackupScreen
 import com.example.galleryapp.ui.cleaner.CleanerScreen
+import com.example.galleryapp.ui.collage.CollageMakerScreen
 import com.example.galleryapp.ui.editor.AIEditorScreen
 import com.example.galleryapp.ui.map.MapScreen
+import com.example.galleryapp.ui.memories.MemoriesStoryScreen
 import com.example.galleryapp.ui.onboarding.OnboardingScreen
 import com.example.galleryapp.ui.premium.PremiumScreen
+import com.example.galleryapp.ui.security.AppLockSetupScreen
 import com.example.galleryapp.ui.settings.SettingsScreen
+import com.example.galleryapp.ui.slideshow.SlideshowScreen
 import com.example.galleryapp.ui.splash.SplashScreen
 import com.example.galleryapp.ui.storage.StorageScreen
 import com.example.galleryapp.ui.trash.TrashScreen
 import com.example.galleryapp.ui.vault.VaultScreen
+import com.example.galleryapp.ui.video.VideoPlayerScreen
+import com.example.galleryapp.ui.video.VideoTrimmerScreen
 import com.example.galleryapp.ui.viewer.PhotoViewerScreen
 
 @Composable
@@ -59,7 +65,10 @@ fun AppNavigation() {
                 onNavigateToCleaner = { navController.navigate(Screen.Cleaner) },
                 onNavigateToSettings = { navController.navigate(Screen.Settings) },
                 onNavigateToPremium = { navController.navigate(Screen.Premium) },
-                onNavigateToMap = { navController.navigate(Screen.Map) }
+                onNavigateToMap = { navController.navigate(Screen.Map) },
+                onNavigateToMemoriesStory = { navController.navigate(Screen.MemoriesStory) },
+                onNavigateToSlideshow = { navController.navigate(Screen.Slideshow) },
+                onNavigateToCollageMaker = { navController.navigate(Screen.CollageMaker) },
             )
         }
 
@@ -86,6 +95,48 @@ fun AppNavigation() {
             )
         }
 
+        composable(
+            route = Screen.VideoPlayer,
+            arguments = listOf(navArgument("photoId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val photoId = backStackEntry.arguments?.getLong("photoId") ?: 0L
+            VideoPlayerScreen(
+                photoId = photoId,
+                onBack = { navController.popBackStack() },
+                onTrim = { id -> navController.navigate(Screen.videoTrimmer(id)) }
+            )
+        }
+
+        composable(
+            route = Screen.VideoTrimmer,
+            arguments = listOf(navArgument("photoId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val photoId = backStackEntry.arguments?.getLong("photoId") ?: 0L
+            VideoTrimmerScreen(
+                photoId = photoId,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.MemoriesStory) {
+            MemoriesStoryScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.CollageMaker) {
+            CollageMakerScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.Slideshow) {
+            SlideshowScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.AppLockSetup) {
+            AppLockSetupScreen(
+                onBack = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() }
+            )
+        }
+
         composable(Screen.Vault) {
             VaultScreen(onBack = { navController.popBackStack() })
         }
@@ -102,7 +153,8 @@ fun AppNavigation() {
                 onNavigateToCleaner = { navController.navigate(Screen.Cleaner) },
                 onNavigateToTrash = { navController.navigate(Screen.Trash) },
                 onNavigateToStorage = { navController.navigate(Screen.Storage) },
-                onNavigateToBackup = { navController.navigate(Screen.Backup) }
+                onNavigateToBackup = { navController.navigate(Screen.Backup) },
+                onNavigateToAppLock = { navController.navigate(Screen.AppLockSetup) }
             )
         }
 

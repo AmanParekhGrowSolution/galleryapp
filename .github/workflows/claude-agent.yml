@@ -6,6 +6,7 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CLAUDE_CODE_DEBUG_LOG_LEVEL: verbose
 
 jobs:
   claude-agent:

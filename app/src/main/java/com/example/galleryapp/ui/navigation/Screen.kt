@@ -13,6 +13,9 @@ object Screen {
     const val Settings = "settings"
     const val Premium = "premium"
     const val Map = "map"
+    const val Trash = "trash"
+    const val Storage = "storage"
+    const val Backup = "backup"
     const val PhotoViewer = "photo_viewer/{photoId}"
     const val AIEditor = "ai_editor/{photoId}"
 

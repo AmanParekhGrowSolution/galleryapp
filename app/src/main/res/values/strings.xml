@@ -142,6 +142,40 @@
     <string name="change_map_layers">Change map layers</string>
     <string name="my_location">My location</string>
 
+    <!-- Trash / Recently Deleted -->
+    <string name="trash_auto_delete_info">Items will be permanently deleted after 30 days. Restore to recover.</string>
+    <string name="trash_items_auto_delete">%1$d items · auto-delete in 30 days</string>
+    <string name="trash_selected_count">%1$d selected</string>
+    <string name="select_all">Select all</string>
+    <string name="restore_selected">Restore (%1$d)</string>
+    <string name="delete_selected">Delete (%1$d)</string>
+
+    <!-- Storage Manager -->
+    <string name="storage_manager_title">Storage</string>
+    <string name="storage_used_of">GB used of %1$d GB</string>
+    <string name="storage_free_pct">%1$s GB free · %2$d%% full</string>
+    <string name="browse_by_type">Browse by type</string>
+    <string name="storage_free_up_cta">Free up %1$s GB</string>
+    <string name="cleaner_cta_subtitle">Smart Cleaner found space to recover</string>
+
+    <!-- Backup &amp; Sync -->
+    <string name="backup_title">Backup &amp; Sync</string>
+    <string name="backup_on">Backup is on</string>
+    <string name="backup_off">Backup is off</string>
+    <string name="backup_last_synced">Last synced 12 minutes ago · %1$d photos</string>
+    <string name="backup_device_only">Your photos are stored only on this device</string>
+    <string name="backup_cloud_destination">Cloud destination</string>
+    <string name="backup_settings_label">Backup settings</string>
+    <string name="backup_wifi_only">Wi-Fi only</string>
+    <string name="backup_wifi_only_sub">Only back up when connected to Wi-Fi</string>
+    <string name="backup_charging_only">While charging</string>
+    <string name="backup_charging_only_sub">Only back up when plugged in</string>
+    <string name="backup_include_vault">Include vault</string>
+    <string name="backup_include_vault_sub">Back up vault photos separately, encrypted</string>
+    <string name="backup_stat_backed_up">BACKED UP</string>
+    <string name="backup_stat_pending">PENDING</string>
+    <string name="backup_stat_used">USED</string>
+
     <!-- Common -->
     <string name="sort">Sort</string>
     <string name="filter">Filter</string>

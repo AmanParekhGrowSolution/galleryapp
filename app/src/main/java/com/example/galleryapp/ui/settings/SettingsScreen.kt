@@ -60,6 +60,9 @@ fun SettingsScreen(
     onNavigateToPremium: () -> Unit,
     onNavigateToVault: () -> Unit,
     onNavigateToCleaner: () -> Unit,
+    onNavigateToTrash: () -> Unit = {},
+    onNavigateToStorage: () -> Unit = {},
+    onNavigateToBackup: () -> Unit = {},
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -111,24 +114,23 @@ fun SettingsScreen(
                 SettingsNavRow(
                     icon = Icons.Default.Storage,
                     iconGradient = listOf(Color(0xFFF59E0B), Color(0xFFD97706)),
-                    label = stringResource(R.string.cleaner_title),
+                    label = stringResource(R.string.storage_manager_title),
                     value = uiState.storageLabel,
-                    onClick = onNavigateToCleaner
+                    onClick = onNavigateToStorage
                 )
                 SettingsNavRow(
                     icon = Icons.Default.Delete,
                     iconGradient = listOf(Color(0xFF6B7280), Color(0xFF4B5563)),
                     label = stringResource(R.string.recently_deleted),
                     value = uiState.trashLabel,
-                    onClick = {}
+                    onClick = onNavigateToTrash
                 )
-                SettingsToggleRow(
+                SettingsNavRow(
                     icon = Icons.Default.CloudUpload,
                     iconGradient = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6)),
-                    label = stringResource(R.string.cloud_backup),
-                    subtitle = null,
-                    checked = uiState.cloudBackup,
-                    onToggle = viewModel::toggleCloudBackup
+                    label = stringResource(R.string.backup_title),
+                    value = if (uiState.cloudBackup) stringResource(R.string.backup_on) else stringResource(R.string.backup_off),
+                    onClick = onNavigateToBackup
                 )
             }
             item {

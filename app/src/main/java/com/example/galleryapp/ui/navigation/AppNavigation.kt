@@ -6,6 +6,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.galleryapp.ui.backup.BackupScreen
 import com.example.galleryapp.ui.cleaner.CleanerScreen
 import com.example.galleryapp.ui.editor.AIEditorScreen
 import com.example.galleryapp.ui.map.MapScreen
@@ -13,6 +14,8 @@ import com.example.galleryapp.ui.onboarding.OnboardingScreen
 import com.example.galleryapp.ui.premium.PremiumScreen
 import com.example.galleryapp.ui.settings.SettingsScreen
 import com.example.galleryapp.ui.splash.SplashScreen
+import com.example.galleryapp.ui.storage.StorageScreen
+import com.example.galleryapp.ui.trash.TrashScreen
 import com.example.galleryapp.ui.vault.VaultScreen
 import com.example.galleryapp.ui.viewer.PhotoViewerScreen
 
@@ -96,8 +99,26 @@ fun AppNavigation() {
                 onBack = { navController.popBackStack() },
                 onNavigateToPremium = { navController.navigate(Screen.Premium) },
                 onNavigateToVault = { navController.navigate(Screen.Vault) },
-                onNavigateToCleaner = { navController.navigate(Screen.Cleaner) }
+                onNavigateToCleaner = { navController.navigate(Screen.Cleaner) },
+                onNavigateToTrash = { navController.navigate(Screen.Trash) },
+                onNavigateToStorage = { navController.navigate(Screen.Storage) },
+                onNavigateToBackup = { navController.navigate(Screen.Backup) }
             )
+        }
+
+        composable(Screen.Trash) {
+            TrashScreen(onBack = { navController.popBackStack() })
+        }
+
+        composable(Screen.Storage) {
+            StorageScreen(
+                onBack = { navController.popBackStack() },
+                onOpenCleaner = { navController.navigate(Screen.Cleaner) }
+            )
+        }
+
+        composable(Screen.Backup) {
+            BackupScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Screen.Premium) {

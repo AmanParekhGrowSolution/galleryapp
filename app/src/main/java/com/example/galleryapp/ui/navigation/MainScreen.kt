@@ -85,6 +85,7 @@ fun MainScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
+                .navigationBarsPadding()
                 .padding(bottom = 84.dp)
         ) {
             composable(Screen.Home) {

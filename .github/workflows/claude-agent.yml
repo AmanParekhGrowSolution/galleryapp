@@ -133,7 +133,6 @@ jobs:
                ## Implementation plan (pre-edit)
                **Files I will modify:** <full list with paths>
                **Every UI surface I will create or touch:** <enumerate every Box / Card / Surface / Row / Column that will receive a .background(...) — INCLUDE nested decorative surfaces: drag handles, pills, badges, dividers, chips, tab indicators. These are the surfaces that autofix loops keep missing.>
-               **Every gradient I will use:** <surface name -> Brush.linearGradient/verticalGradient + token from CLAUDE.md §2 (Primary/Accent/Success/Warning/Error/Background)>
                **Every Color parameter I will thread:** <e.g. `color: Color` passed parent->child, `tint: Color` threaded through helpers — list every Color param crossing a composable boundary so the `color = color` violation pattern is caught before it compiles>
                **State-shape changes:** <UiState fields added/renamed/removed; downstream ViewModel + Test files that must update in the same PR>
                **Hardcoded glyphs / separators:** <none, OR: list with the strings.xml key each will become>
@@ -142,10 +141,9 @@ jobs:
 
                The plan must be concrete — "Update UI" or "fix all violations" is not acceptable. If implementation reveals the plan was wrong, update the comment before continuing.
 
-            3. **Read `CLAUDE.md`** at the repo root — it contains mandatory gradient design rules and architecture you MUST follow.
+            3. **Read `CLAUDE.md`** at the repo root — it contains the mandatory architecture, accessibility, and security rules you MUST follow.
 
             4. **Implement** the ${{ contains(github.event.label.name, 'fix') && 'bug fix' || 'feature' }}:
-               - ALL new UI must use `Brush.linearGradient` / `verticalGradient` — flat colours are forbidden
                - Follow MVVM: ViewModel → UiState sealed class → stateless composables
                - Write unit tests for any new ViewModel or Repository logic
                - Add `contentDescription` to every Icon and Image
@@ -155,7 +153,7 @@ jobs:
 
             5a. **Self-critique against plan.** Run `git diff origin/main` and walk through every enumerated item in the plan comment:
                - Does the diff contain the change? If not, why?
-               - Did your edits introduce any NEW Box/Card/Surface/Row/Column that was NOT in the enumeration? If yes, treat it as a plan miss — verify it uses `Brush.*` not a flat `Color`, and update the plan comment.
+               - Did your edits introduce any NEW Box/Card/Surface/Row/Column that was NOT in the enumeration? If yes, treat it as a plan miss — verify it is CLAUDE.md compliant, and update the plan comment.
                - Did any `color`/`tint` parameter appear in the diff that was not listed in the plan? Trace the parameter end-to-end and verify the value at every call site.
                Only proceed to step 5b once every diff item maps to a plan entry.
 
@@ -164,13 +162,11 @@ jobs:
                 bash scripts/check-claude-md.sh --diff origin/main
                 ```
                 **Do not push if this exits non-zero.** Common violations it catches:
-                - `[G1]` flat solid background (single-line and multi-line `.background(Color...)`) — use `Brush.linearGradient`
-                - `[G3]` text alpha ≠ 0.87f — `Text(color = Color.White.copy(alpha = 0.5f))` must be `0.87f`
-                - `[G4]` icon tint has alpha — must be `tint = Color.White`
-                - `[G5]` `color`/`tint` parameter threaded without a `Color.White` literal — verify the caller value
                 - `[A1]` `IconButton` touch target < 48 dp
                 - `[S2]` single-char hardcoded separator like `Text(":")` — move to `strings.xml`
                 - `[ARCH2]` `.collectAsState()` — must be `.collectAsStateWithLifecycle()`
+                - `[SEC1]` cleartext `http://` URL — use HTTPS
+                - `[SEC2]` hardcoded credential/API key — use environment variable or Android Keystore
 
             6. **Create a branch** named:
                `claude/${{ contains(github.event.label.name, 'fix') && 'fix' || 'feat' }}-issue-${{ github.event.issue.number }}-<short-description>`
@@ -202,7 +198,7 @@ jobs:
           retention-days: 14
 
       # ── 6. Deterministic CLAUDE.md compliance gate ───────────────────────────
-      # Catches gradient/alpha/tint/separator/architecture violations that the
+      # Catches architecture/security/accessibility/separator violations that the
       # LLM may have missed. Fails the workflow before the PR is opened, so the
       # agent must address every match rather than pushing a violating branch.
       - name: Verify CLAUDE.md compliance (deterministic)
@@ -210,7 +206,7 @@ jobs:
         run: |
           bash scripts/check-claude-md.sh --diff origin/main \
             || {
-              echo "::error::Deterministic linter found CLAUDE.md violations in the agent's changes. Review the output above and fix all flagged lines before opening a PR."
+              echo "::error::Deterministic linter found BLOCKING violations in the agent's changes (A1, S2, ARCH1-2, SEC1-SEC10). Review the output above and fix all [BLOCKING] lines before opening a PR. [ADVISORY] lines (P1-P3, LC1-LC3, PRIV1-2) are informational only."
               exit 1
             }
 

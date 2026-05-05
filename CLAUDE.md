@@ -1,6 +1,6 @@
 # CLAUDE.md
 > Automatically loaded by Claude Code as its system context.
-> Rules below are the single source of truth for this repo — the CI review workflow enforces them.
+> Architectural, security, and accessibility rules are enforced by the CI review workflow.
 
 ---
 
@@ -13,65 +13,15 @@
 
 ---
 
-## 2. Gradient Design System ← MANDATORY
+## 2. Visual design
 
-Every composable you create or modify MUST use `Brush` gradients for backgrounds and buttons.
-Flat solid-colour backgrounds and `containerColor` overrides on Material3 components are **forbidden**.
+When the user provides a screenshot, HTML mockup, Figma export, or other design reference, treat that reference as the authoritative source for colours, typography, spacing, and layout. Extract values directly from the reference.
 
-### Colour Tokens
+When no reference is provided, match the look established by sibling screens in `app/src/main/java/com/example/galleryapp/ui/` — read 1–2 nearby screens before composing a new one.
 
-| Token      | Start                 | End                   |
-|------------|-----------------------|-----------------------|
-| Primary    | `Color(0xFF6366F1)`   | `Color(0xFF8B5CF6)`   |
-| Accent     | `Color(0xFF06B6D4)`   | `Color(0xFF3B82F6)`   |
-| Success    | `Color(0xFF10B981)`   | `Color(0xFF059669)`   |
-| Warning    | `Color(0xFFF59E0B)`   | `Color(0xFFD97706)`   |
-| Error      | `Color(0xFFEF4444)`   | `Color(0xFFDC2626)`   |
-| Background | `Color(0xFF0F0C29)`   | `Color(0xFF24243E)`   |
-
-### Code Patterns
-
-```kotlin
-// Screen background
-Box(
-    modifier = Modifier.fillMaxSize().background(
-        Brush.verticalGradient(
-            listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-        )
-    )
-)
-
-// Primary button — wrap in Box, never override Button's containerColor
-Box(
-    modifier = Modifier
-        .background(
-            Brush.linearGradient(listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))),
-            RoundedCornerShape(12.dp)
-        )
-        .clickable(onClick = onClick)
-        .padding(horizontal = 24.dp, vertical = 14.dp)
-) {
-    Text(label, color = Color.White, fontWeight = FontWeight.SemiBold)
-}
-
-// Card with subtle gradient tint
-Card(
-    modifier = Modifier
-        .fillMaxWidth()
-        .background(
-            Brush.linearGradient(
-                listOf(Color(0xFF6366F1).copy(alpha = 0.10f), Color(0xFF8B5CF6).copy(alpha = 0.10f))
-            ),
-            RoundedCornerShape(16.dp)
-        )
-)
-```
-
-**Rules:**
-- Text on gradient background → `Color.White` or `Color.White.copy(alpha = 0.87f)`
-- Icons on gradient → `tint = Color.White`
-- Animated colour/alpha → use `animateColorAsState` / `animateFloatAsState`
-- Loading/shimmer states → use gradient shimmer, not solid placeholders
+Code-level conventions (apply regardless of palette):
+- Use `animateColorAsState` / `animateFloatAsState` for animated colour/alpha
+- Loading/shimmer states → use a shimmer effect, not a solid placeholder
 
 ---
 
@@ -131,12 +81,18 @@ sealed interface NewsUiState {
 - Annotate pure data holders passed into composables with `@Immutable` or `@Stable`
 - Profile recompositions in Layout Inspector before optimising; don't annotate prematurely
 - Defer state reads inside lambdas when possible: `Modifier.offset { IntOffset(x.value, 0) }`
+- **[P1]** Always supply `key =` to `items()` in `LazyColumn`/`LazyRow` — prevents full re-render when list order changes
+- **[P2]** Never sort/filter a collection inside `items(...)` — wrap with `remember(list) { list.sortedBy { ... } }` above the lazy layout
+- **[P3]** Wrap scroll-position reads (e.g. `listState.firstVisibleItemIndex`) in `derivedStateOf { }` — avoids recomposition on every pixel scroll
 
-### Coroutines
+### Coroutines & lifecycle
 
 - `viewModelScope` — use for data loading, business logic, API calls (survives rotation)
 - `lifecycleScope` — use only for UI-scoped work in Activity/Fragment
 - Prefer `flow {}` + `collect` over callbacks; expose cold flows from repositories
+- **[LC1]** Never use `GlobalScope.launch` / `GlobalScope.async` — it bypasses structured concurrency and leaks
+- **[LC2]** Never use `runBlocking` in production code — it blocks the calling thread; use `suspend` functions or `launch`
+- **[LC3]** Never call `viewModelScope.launch` outside a `ViewModel` class — use the scope that matches the lifecycle
 
 ---
 
@@ -179,6 +135,41 @@ If a feature grows to need DI:
 - Add **Hilt** (Google's recommended solution for Android)
 - Scope bindings: `@Singleton` for app-wide services, `@ViewModelScoped` for ViewModel-specific deps
 - Do NOT use Koin in new code (Hilt is the project standard)
+
+---
+
+## 10. Security (OWASP MASVS)
+
+Rules enforced by the linter as **BLOCKING**. Security violations must be fixed before any PR is opened.
+
+### Network (MASVS-NETWORK)
+- **[SEC1]** Never use `http://` URLs — HTTPS only for all network calls
+- Implement `NetworkSecurityConfig` if you need to add certificate pinning
+
+### Credentials & Cryptography (MASVS-CRYPTO)
+- **[SEC2]** Never hardcode API keys, tokens, secrets, or passwords in source — use environment variables, `BuildConfig` fields injected at build time, or Android Keystore
+- **[SEC5]** Never use `java.util.Random` for anything security-related — use `java.security.SecureRandom`
+- **[SEC6]** Never use deprecated algorithms: `MD5`, `SHA-1`, `DES`, `ECB` cipher mode
+  - ❌ `MessageDigest.getInstance("MD5")`
+  - ✅ `MessageDigest.getInstance("SHA-256")`
+  - ❌ `Cipher.getInstance("AES/ECB/PKCS5Padding")`
+  - ✅ `Cipher.getInstance("AES/GCM/NoPadding")`
+
+### TLS Validation (MASVS-NETWORK)
+- **[SEC9]** Never use `ALLOW_ALL_HOSTNAME_VERIFIER` or override `checkServerTrusted` with a no-op body — always validate certificates properly
+
+### Build configuration (MASVS-RESILIENCE)
+- **[SEC10]** Never set `android:debuggable="true"` in `app/src/main/AndroidManifest.xml` — the debug build type sets this automatically; the main manifest must not override it
+
+---
+
+## 11. Privacy & Logging
+
+Rules enforced by the linter as **ADVISORY** — surfaced as review comments but do not block merge.
+
+- **[PRIV1]** Never log sensitive fields (`token`, `password`, `email`, `phone`, `userId`) with `Log.d/v/i/w/e` — guard with `if (BuildConfig.DEBUG)` and strip before release
+- **[PRIV2]** Never leave `println()` in production source — replace with `Log.*` or remove entirely
+- This app handles user photos — treat file paths, EXIF metadata, and gallery contents as PII: do not log or send them to analytics without explicit consent
 
 ---
 

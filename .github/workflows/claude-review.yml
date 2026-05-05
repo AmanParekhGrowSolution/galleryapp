@@ -7,6 +7,10 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
+concurrency:
+  group: claude-review-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
@@ -61,7 +65,7 @@ jobs:
 
             2. Run `gh pr diff ${{ github.event.pull_request.number }}` and **read the full diff**.
 
-            3. **Form your own list of issues from the diff** — architecture, accessibility, scope creep, missing tests, and the judgment-call rules listed below. Do this BEFORE consulting the deterministic linter output in step 4, so your analysis is not anchored to what the linter already found. The linter only catches mechanical patterns; you are responsible for the architecture and accessibility issues it cannot see.
+            3. **Form your own list of issues from the diff** — architecture, security, accessibility, scope creep, missing tests, and the judgment-call rules listed below. Do this BEFORE consulting the deterministic linter output in step 4, so your analysis is not anchored to what the linter already found. The linter only catches mechanical patterns; you are responsible for the architecture, security, and accessibility issues it cannot see.
 
             4. **Now consult the deterministic linter output** (already computed — do NOT re-run these checks):
 
@@ -69,7 +73,14 @@ jobs:
             ${{ steps.linter.outputs.linter_output }}
             ```
 
-            The linter has scanned every changed line for G1–G5, A1, S2, ARCH1, ARCH2. Its output is authoritative for those rules. **Append every line above verbatim to your blocking-violations list.** Do NOT spend turns re-checking gradient backgrounds, text alpha values, icon tints, touch targets, single-char separators, or ViewModel imports.
+            The linter has scanned every changed line for A1, S2, ARCH1, ARCH2, SEC1–SEC10, P1–P3, LC1–LC3, PRIV1–PRIV2.
+            Its output is authoritative for those rule codes. Route each line by its severity tag:
+            - Lines tagged `[BLOCKING]` → append verbatim to your **blocking-violations** list
+            - Lines tagged `[ADVISORY]` → append verbatim to your **advisory notes** list
+
+            Do NOT spend turns re-checking touch targets, separators,
+            ViewModel imports, HTTP URLs, hardcoded credentials, deprecated crypto, or println/Log patterns —
+            the linter has already checked all of these.
 
             5. Evaluate the diff against the **judgment-call** rules below. Rules are split into
                **BLOCKING** (fail the PR) and **ADVISORY** (leave a comment but do not block).
@@ -87,6 +98,12 @@ jobs:
             **Accessibility (Section 7)**
             - Every new `Image` or `Icon` must have a non-empty `contentDescription` (or `contentDescription = null`
               with an explicit decorative `Role`). Missing contentDescription is blocking.
+
+            **Security — judgment calls (Section 10)**
+            - Flag any new `SharedPreferences` usage that stores tokens, passwords, or user credentials — should use `EncryptedSharedPreferences` instead. This is BLOCKING.
+            - Flag any `WebView` that enables JavaScript (`setJavaScriptEnabled(true)`) without a comment justifying the need. This is BLOCKING.
+            - Flag any `@JavascriptInterface` exposed to WebView JS — verify the method does not leak sensitive data or execute privileged actions without validation. This is BLOCKING.
+            - Flag any new `android:exported="true"` on an Activity, Service, or BroadcastReceiver that does not need to be exported — verify intent filtering or access control is in place. This is BLOCKING.
 
             ---
 
@@ -107,6 +124,12 @@ jobs:
             **Compose performance (Section 4)**
             - Note if expensive calculations inside a composable are not wrapped in `remember {}`.
             - Note if `derivedStateOf` could reduce unnecessary recompositions.
+            - Note if `LazyColumn`/`LazyRow` `items()` lacks a `key =` parameter (P1).
+            - Note if state is collected with `collectAsState()` instead of `collectAsStateWithLifecycle()` (ARCH2 — also caught by linter).
+
+            **Privacy (Section 11)**
+            - Note if file paths, EXIF metadata, or gallery content is logged or sent to analytics without visible consent handling.
+            - Note if any UI screen displays photo location data without a privacy indicator.
 
             **Skill alignment**
             - If the diff implements AdMob / ad-related code, note whether `android-admob` skill was used.
@@ -119,17 +142,18 @@ jobs:
                `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
                Structure:
                - ✅ **Passed checks** — list what was verified and passed
-               - ❌ **Blocking violations** — include ALL linter output lines verbatim, then add any architecture/accessibility violations you found
-               - ⚠️ **Advisory notes** — list non-blocking suggestions
+               - ❌ **Blocking violations** — include ALL linter `[BLOCKING]` lines verbatim, then add any architecture/security/accessibility violations you found
+               - ⚠️ **Advisory notes** — include ALL linter `[ADVISORY]` lines verbatim, then add advisory judgment-call findings
                - 📁 **Files reviewed** — list all changed files examined
             8. **Apply a verdict label — this gates the merge:**
                First remove any prior verdict:
                `gh pr edit ${{ github.event.pull_request.number }} --remove-label "review: passed" --remove-label "review: blocked" 2>/dev/null || true`
                Then apply the outcome:
-               - PASS (zero blocking violations AND linter output is empty/clean): `gh pr edit ${{ github.event.pull_request.number }} --add-label "review: passed"`
-               - FAIL (linter reported violations OR you found architecture/accessibility violations): `gh pr edit ${{ github.event.pull_request.number }} --add-label "review: blocked"`
+               - PASS (zero blocking violations AND no linter `[BLOCKING]` lines): `gh pr edit ${{ github.event.pull_request.number }} --add-label "review: passed"`
+               - FAIL (any linter `[BLOCKING]` line OR architecture/security/accessibility violation): `gh pr edit ${{ github.event.pull_request.number }} --add-label "review: blocked"`
 
-            Advisory-only issues never cause a FAIL verdict. Be accurate — do not block on advisory issues.
+            Advisory-only issues (linter `[ADVISORY]` lines or advisory judgment calls) never cause a FAIL verdict.
+            Be accurate — do not block on advisory issues.
 
       - name: Upload Claude debug log
         if: always()

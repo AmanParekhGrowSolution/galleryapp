@@ -32,6 +32,7 @@ val Fg2 = Color(0xFF2D3748)
 val SubtextGray = Color(0xFF597393)          // --fg-3
 val FgMuted = Color(0xFF7A8389)              // --fg-muted
 val SectionLabelGray = Color(0xFF8E9BAE)
+val NavUnselectedGray = Color(0xFF707070)    // neutral gray for inactive nav tabs
 
 // ── Dark-theme surfaces ────────────────────────────────────────────────────────
 val DarkBg = Color(0xFF131111)               // --bg-dark

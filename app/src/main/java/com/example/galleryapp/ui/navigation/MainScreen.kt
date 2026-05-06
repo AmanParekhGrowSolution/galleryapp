@@ -46,7 +46,7 @@ import com.example.galleryapp.ui.home.HomeScreen
 import com.example.galleryapp.ui.moments.MomentsScreen
 import com.example.galleryapp.ui.search.SearchScreen
 import com.example.galleryapp.ui.theme.BrandBlue
-import com.example.galleryapp.ui.theme.SubtextGray
+import com.example.galleryapp.ui.theme.NavUnselectedGray
 
 private data class TabItem(
     val route: String,
@@ -195,13 +195,13 @@ private fun NavTabItem(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (selected) BrandBlue else SubtextGray,
+            tint = if (selected) BrandBlue else NavUnselectedGray,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = label,
-            color = if (selected) BrandBlue else SubtextGray,
+            color = if (selected) BrandBlue else NavUnselectedGray,
             fontSize = 11.sp,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
         )

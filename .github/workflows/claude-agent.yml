@@ -124,19 +124,33 @@ jobs:
 
             ## Available skills
 
-            This repo ships project-local skills at `.claude/skills/`. Auto-invoke them via
-            the `Skill` tool whenever the issue matches:
+            This repo ships 35 project-local skills at `.claude/skills/`. Auto-invoke them via
+            the `Skill` tool whenever the issue matches. Key skills:
 
+            - **`claude-design-to-android`** — use when the issue provides a design file, ZIP of
+              screens, HTML mockup, or Figma export and asks to implement/replicate the UI in Compose.
+              Invoke this FIRST before any other step when a design reference is attached.
+            - **`android-ui-replicator`** — use when the issue includes a screenshot or design
+              reference and asks to replicate / clone / rebuild / convert a screen into Kotlin + XML.
             - **`android-admob`** — use when the issue asks to add ads / monetize / integrate
               AdMob / banner / interstitial / app-open / rewarded ads, or mentions a
               `ca-app-pub-...` ID. The skill encodes the full Koin-DI wiring + Play Store
               policy guardrails — do not hand-roll AdMob code.
-            - **`android-ui-replicator`** — use when the issue includes a screenshot or
-              design reference and asks to replicate / clone / rebuild / convert a screen
-              into Kotlin + XML.
+            - **`jetpack-compose`** — use for Compose UI patterns, animation, theming.
+            - **`mvi-architecture`** — use when the issue involves state management or architecture changes.
+            - **`navigation-compose`** — use when the issue touches navigation or deep linking.
 
             If a skill matches, invoke it BEFORE writing code — its workflow supersedes
             the generic "Implement" step below for that subtask.
+
+            ## Handling ZIP / file attachments in issues
+
+            When the issue body contains a GitHub attachment URL ending in `.zip`:
+            1. Download it: `curl -L -o /tmp/design.zip "<url>"`
+            2. Unzip to a temp dir: `unzip /tmp/design.zip -d /tmp/design/`
+            3. List what's inside: `find /tmp/design/ -type f | head -40`
+            4. Read only text/image files. Never `cat` a binary or APK file directly.
+            5. Delete the zip when done: `rm /tmp/design.zip`
 
             ## Scope rules — STRICT
 

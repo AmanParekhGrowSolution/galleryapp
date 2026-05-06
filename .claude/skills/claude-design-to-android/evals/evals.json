@@ -1,0 +1,62 @@
+{
+  "skill_name": "claude-design-to-android",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I uploaded a Claude Design bundle (sample_bundle.zip). Convert it into Android Kotlin + Jetpack Compose. Output a complete project structure I can drop into an Android Studio project.",
+      "expected_output": "Three Composables (S01Welcome, S02Home, S03Detail) plus a Color.kt with all 7 design tokens (Primary, Ink, Muted, Hair, White, Danger, Bg), plus a NavGraph wiring the three screens. PrimaryButton component extracted as reusable. No deprecated APIs (no rememberSystemUiController, no Icons.Default.ArrowBack).",
+      "files": ["sample_bundle.zip"],
+      "assertions": [
+        {"text": "Color.kt contains a constant for every color in tokens.jsx (7 unique colors)", "type": "manual"},
+        {"text": "Three @Composable screen functions are present, one per S01/S02/S03 screen", "type": "manual"},
+        {"text": "PrimaryButton is extracted as a reusable Composable, not duplicated inline", "type": "manual"},
+        {"text": "MainActivity uses enableEdgeToEdge, NOT rememberSystemUiController", "type": "grep_negative", "pattern": "rememberSystemUiController"},
+        {"text": "No use of deprecated Icons.Default.ArrowBack — should be Icons.AutoMirrored.Filled.ArrowBack", "type": "grep_negative", "pattern": "Icons\\.Default\\.ArrowBack"},
+        {"text": "Screens use fillMaxSize/weight, not hard-coded 390/844 dimensions", "type": "grep_negative", "pattern": "(390\\.dp|844\\.dp)"},
+        {"text": "Package declarations use the placeholder com.example.designapp", "type": "grep_positive", "pattern": "package com\\.example\\.designapp"},
+        {"text": "NavHost wires all three screens", "type": "manual"}
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Just run the color extraction script on /home/claude/design-bundle (the unpacked sample_bundle.zip) and show me what it produces.",
+      "expected_output": "convert_colors.py is executed against the unpacked bundle. Output Color.kt has 7 unique colors with proper Kotlin syntax (Color(0xFFRRGGBB) for opaque, Color(0xFFRRGGBB).copy(alpha = X.Xf) for translucent).",
+      "files": ["sample_bundle.zip"],
+      "assertions": [
+        {"text": "Script runs without error", "type": "manual"},
+        {"text": "Output contains exactly 7 unique color constants (Primary, Ink, Muted, Hair, White, Danger, Bg)", "type": "manual"},
+        {"text": "Translucent colors use .copy(alpha = X.Xf) syntax", "type": "manual"},
+        {"text": "No constant named simply 'Color' (which would shadow the imported class)", "type": "grep_negative", "pattern": "^val Color = "}
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have this design bundle. Don't convert all of it yet — just walk me through what's in it and what you'd produce. I want to understand before you write a bunch of code.",
+      "expected_output": "Skill demonstrates discovery phase: lists files, classifies them (tokens.jsx → tokens, components.jsx → shared components, screens.jsx → 3 screens, app.jsx → router), summarizes what would be generated, then PAUSES and asks for confirmation before generating code.",
+      "files": ["sample_bundle.zip"],
+      "assertions": [
+        {"text": "Skill correctly identifies tokens.jsx as the design tokens file", "type": "manual"},
+        {"text": "Skill correctly counts 3 screens", "type": "manual"},
+        {"text": "Skill correctly identifies PrimaryButton and Card as shared components", "type": "manual"},
+        {"text": "Skill stops before generating code and asks for confirmation", "type": "manual"}
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "I have a design bundle with some logos and photos in an assets/ folder, plus a screenshots/ folder with state captures. Convert the design and make sure the real assets end up in the Android project.",
+      "expected_output": "Skill runs scripts/extract_assets.py. Files referenced from JSX (logos, photos) are copied into res/drawable-nodpi/ with Android-safe names (lowercase, no hyphens, digit-prefixed if starting with number). Files in screenshots/ folder are skipped. SVGs are copied with a warning to convert to vector drawable. An assets-manifest.md is generated with origin → destination mapping and Compose usage snippets.",
+      "files": ["asset_test_bundle.zip"],
+      "assertions": [
+        {"text": "Files in screenshots/ folder are NOT copied to drawable/", "type": "manual"},
+        {"text": "All referenced PNG/JPG files are copied to res/drawable-nodpi/", "type": "manual"},
+        {"text": "All referenced SVG files are copied to res/drawable/ with a conversion warning", "type": "manual"},
+        {"text": "Resource names are valid: lowercase, [a-z0-9_], can't start with digit", "type": "regex_match", "pattern": "^[a-z][a-z0-9_]*\\.(xml|png|jpg|jpeg|webp|gif|svg)$"},
+        {"text": "@2x density markers are stripped from filenames", "type": "manual"},
+        {"text": "Hyphens and capital letters are normalized", "type": "manual"},
+        {"text": "assets-manifest.md is created with a usage snippet for each asset", "type": "manual"},
+        {"text": "Composables that use assets reference them via painterResource(R.drawable.xxx)", "type": "grep_positive", "pattern": "painterResource\\(R\\.drawable\\."}
+      ]
+    }
+  ],
+  "notes": "Test cases focus on (1) end-to-end conversion correctness, (2) the bundled convert_colors.py script working as advertised, (3) the skill respecting user pacing, and (4) proper asset extraction with screenshot-skipping. Run these with the corresponding zips in this evals/ folder."
+}

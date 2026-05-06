@@ -104,6 +104,7 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.AGENT_PAT }}
+          show_full_output: true
           claude_args: >-
             --model claude-sonnet-4-6
             --effort high

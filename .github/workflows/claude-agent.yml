@@ -88,9 +88,12 @@ jobs:
           mkdir -p /tmp/issue-attachments
           MANIFEST=/tmp/issue-attachments/manifest.txt
 
-          # Extract all GitHub user-attachment URLs from the issue body
+          # Extract attachment URLs from the issue body. Matches:
+          #   - user-attachments (drag-drop in web UI)
+          #   - release download assets (gh release upload)
+          #   - raw.githubusercontent.com refs
           printf '%s' "$ISSUE_BODY" \
-            | grep -oE 'https://github\.com/user-attachments/(files|assets)/[^ )"\n]+' \
+            | grep -oE 'https://github\.com/user-attachments/(files|assets)/[^ )"<>\n]+|https://github\.com/[^/]+/[^/]+/releases/download/[^ )"<>\n]+|https://raw\.githubusercontent\.com/[^ )"<>\n]+' \
             > /tmp/attachment-urls.txt || true
 
           if [ ! -s /tmp/attachment-urls.txt ]; then

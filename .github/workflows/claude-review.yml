@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
@@ -34,7 +34,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.AGENT_PAT }}
         run: |
-          # actions/checkout@v4 already has the PR merge commit; no need to
+          # actions/checkout@v5 already has the PR merge commit; no need to
           # fetch the head branch (breaks on re-runs after branch deletion).
           git fetch origin ${{ github.event.pull_request.base.ref }}
 
@@ -176,7 +176,7 @@ jobs:
 
       - name: Upload Claude debug log
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: claude-debug-review-pr${{ github.event.pull_request.number }}-run${{ github.run_id }}
           path: ${{ runner.temp }}/claude-debug.json

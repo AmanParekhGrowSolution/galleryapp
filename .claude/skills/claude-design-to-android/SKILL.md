@@ -30,22 +30,39 @@ This skill is designed to be **universal** — it does not hard-code file names,
 
 ### Step 1: Extract
 
-Don't hard-code the zip filename — discover it:
+Don't hard-code the zip filename — discover it. The lookup chain handles both GitHub Actions CI and the Claude.ai sandbox:
 
 ```bash
-mkdir -p /home/claude/design-bundle
-ZIP_FILE=$(ls /mnt/user-data/uploads/*.zip 2>/dev/null | head -1)
+ZIP_FILE=""
+# 1. CI / GitHub Actions — workflow pre-extracts into $DESIGN_BUNDLE_DIR
+if [ -d "${DESIGN_BUNDLE_DIR:-/tmp/issue-attachments}" ]; then
+  ZIP_FILE=$(ls "${DESIGN_BUNDLE_DIR:-/tmp/issue-attachments}"/*.zip 2>/dev/null | head -1)
+fi
+# 2. Claude.ai sandbox (legacy)
 if [ -z "$ZIP_FILE" ]; then
-  echo "No zip in /mnt/user-data/uploads — ask the user to upload one."
+  ZIP_FILE=$(ls /mnt/user-data/uploads/*.zip 2>/dev/null | head -1)
+fi
+if [ -z "$ZIP_FILE" ]; then
+  echo "No design zip found. Looked in \$DESIGN_BUNDLE_DIR, /tmp/issue-attachments, /mnt/user-data/uploads."
   exit 1
 fi
-unzip -o "$ZIP_FILE" -d /home/claude/design-bundle/
+
+# Skip extraction if the workflow already unzipped it
+STEM="$(basename "$ZIP_FILE" .zip)"
+if [ -n "${DESIGN_BUNDLE_DIR:-}" ] && [ -d "$DESIGN_BUNDLE_DIR/$STEM" ]; then
+  BUNDLE_DIR="$DESIGN_BUNDLE_DIR/$STEM"
+else
+  BUNDLE_DIR=/tmp/design-bundle
+  mkdir -p "$BUNDLE_DIR"
+  unzip -o "$ZIP_FILE" -d "$BUNDLE_DIR"
+fi
+echo "Bundle dir: $BUNDLE_DIR"
 ```
 
 ### Step 2: Survey the structure
 
 ```bash
-find /home/claude/design-bundle -type f | head -50
+find "$BUNDLE_DIR" -type f | head -50
 ```
 
 Claude Design bundles vary widely. They may have nested folders or be flat. Files may be named anything. The reliable signal is that the design lives in `.jsx`, `.html`, and/or `.css` files.
@@ -102,7 +119,7 @@ var(--brand-blue)           → reference to BrandBlue constant
 For deterministic conversion of long color lists, run the bundled helper:
 
 ```bash
-python3 scripts/convert_colors.py /home/claude/design-bundle
+python3 .claude/skills/claude-design-to-android/scripts/convert_colors.py "$BUNDLE_DIR"
 ```
 
 It scans the bundle for color literals, deduplicates them, and emits a draft `Color.kt`. Review the names — auto-generated names can be ugly — but the hex values will be correct.
@@ -158,8 +175,14 @@ See `references/asset-mapping.md` for the detailed rules on naming, folder choic
 ### Step 1: Run the asset extraction script
 
 ```bash
-python3 scripts/extract_assets.py /home/claude/design-bundle \
-    --output-dir /home/claude/android-output/res
+# Resolve the output res dir: in CI write directly into the repo; in sandbox use the staging area
+if [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+  OUTPUT_RES="app/src/main/res"
+else
+  OUTPUT_RES="/home/claude/android-output/res"
+fi
+python3 .claude/skills/claude-design-to-android/scripts/extract_assets.py "$BUNDLE_DIR" \
+    --output-dir "$OUTPUT_RES"
 ```
 
 The script:
@@ -368,35 +391,47 @@ data class ScreenUiState(
 
 ## Phase 5 — Output Structure
 
-Generate files under `/home/claude/android-output/`, then copy to `/mnt/user-data/outputs/`.
+### Output target (CI vs sandbox)
+
+**When running under GitHub Actions (`GITHUB_ACTIONS=true`)** — write Compose source DIRECTLY into the repo working tree:
 
 ```
-android-output/
-├── README.md                    ← Setup instructions, dependencies, integration steps
-├── assets-manifest.md           ← Mapping of every imported asset (origin → destination)
-├── kotlin/                      ← All .kt files (drop into app/src/main/java/...)
-│   ├── theme/
-│   │   ├── Color.kt             ← Every color from the design
-│   │   ├── Type.kt              ← Typography styles
-│   │   ├── Shape.kt             ← Shape definitions
-│   │   ├── Spacing.kt           ← Spacing/sizing constants
-│   │   └── Theme.kt             ← MaterialTheme wrapper (light + dark)
-│   ├── components/
-│   │   └── [ComponentName].kt   ← One file per reusable component
-│   ├── screens/
-│   │   └── [feature-group]/     ← Grouped by discovered feature areas
-│   │       └── [ScreenName].kt  ← One Composable per screen function
-│   ├── navigation/
-│   │   ├── Routes.kt            ← Sealed class/enum routes
-│   │   └── NavGraph.kt          ← Full navigation graph
-│   ├── viewmodel/
-│   │   └── [Feature]ViewModel.kt ← One per stateful feature area
-│   └── icons/
-│       └── AppIcons.kt          ← Custom ImageVector icons (non-Material only)
-└── res/                         ← Drop into app/src/main/res/
-    ├── drawable/                ← Vector drawables (XML), tintable icons
-    │   └── *.xml                ← Converted from SVGs
-    └── drawable-nodpi/          ← Bitmap assets at design resolution
+app/src/main/java/<package>/ui/theme/
+  Color.kt        ← every color from the design
+  Type.kt         ← typography styles
+  Shape.kt        ← shape definitions
+  Spacing.kt      ← spacing/sizing constants
+  Theme.kt        ← MaterialTheme wrapper (light + dark)
+
+app/src/main/java/<package>/ui/components/
+  [ComponentName].kt   ← one file per reusable component
+
+app/src/main/java/<package>/ui/<feature>/
+  [ScreenName].kt      ← one Composable per screen function
+  [Feature]ViewModel.kt
+
+app/src/main/java/<package>/navigation/
+  Routes.kt
+  NavGraph.kt
+
+app/src/main/java/<package>/ui/icons/
+  AppIcons.kt          ← custom ImageVector icons (non-Material only)
+
+app/src/main/res/
+  drawable/            ← vector drawables (XML)
+  drawable-nodpi/      ← bitmap assets at design resolution
+```
+
+Derive `<package>` from `app/build.gradle.kts` (`applicationId`). If not found, use `com.example.galleryapp` (this project's existing package).
+
+**When running in the Claude.ai sandbox** — stage to `/home/claude/android-output/` and copy to `/mnt/user-data/outputs/` as before. Structure mirrors the CI tree above but under `android-output/kotlin/` (for `.kt` files) and `android-output/res/`.
+
+### Regardless of target — also produce
+
+```
+assets-manifest.md   ← origin → destination mapping for every imported asset
+README.md            ← setup notes, dependency list, find-replace package instruction
+```
         └── *.png, *.jpg, *.webp ← Logos, photos, illustrations
 ```
 

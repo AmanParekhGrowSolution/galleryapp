@@ -78,7 +78,63 @@ jobs:
               ].join('\n'),
             });
 
-      # ── 4. Pre-install Claude Code (workaround: upstream installer regression)
+      # ── 4. Pre-extract issue attachments (zip / images / HTML) ─────────────
+      # Runs before the agent so every attachment is already on disk when the
+      # agent's prompt is evaluated. The agent reads the manifest and skips curl/unzip.
+      - name: Pre-extract issue attachments
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          mkdir -p /tmp/issue-attachments
+          MANIFEST=/tmp/issue-attachments/manifest.txt
+
+          # Extract all GitHub user-attachment URLs from the issue body
+          printf '%s' "$ISSUE_BODY" \
+            | grep -oE 'https://github\.com/user-attachments/(files|assets)/[^ )"\n]+' \
+            > /tmp/attachment-urls.txt || true
+
+          if [ ! -s /tmp/attachment-urls.txt ]; then
+            echo "none" > "$MANIFEST"
+            echo "No attachments found in issue body."
+          else
+            echo "::group::Issue attachments"
+            while IFS= read -r URL; do
+              BASENAME=$(basename "$URL" | sed 's/[?#].*//')
+              DEST="/tmp/issue-attachments/$BASENAME"
+              echo "Downloading: $BASENAME"
+              curl -fL --retry 2 -o "$DEST" "$URL" 2>/dev/null || { echo "WARN: failed to download $URL"; continue; }
+
+              # Unzip into a subdirectory named after the stem
+              if [[ "$BASENAME" == *.zip ]]; then
+                STEM="${BASENAME%.zip}"
+                mkdir -p "/tmp/issue-attachments/$STEM"
+                unzip -o -q "$DEST" -d "/tmp/issue-attachments/$STEM/" || echo "WARN: unzip failed for $BASENAME"
+                # Add extracted files to manifest
+                find "/tmp/issue-attachments/$STEM" -type f \
+                  | while read -r F; do
+                      SIZE=$(stat -c%s "$F" 2>/dev/null || echo "?")
+                      echo "zip-extracted  $SIZE  $F"
+                    done >> "$MANIFEST"
+              else
+                # Classify by extension
+                case "$BASENAME" in
+                  *.png|*.jpg|*.jpeg|*.webp|*.svg) TYPE="image" ;;
+                  *.html|*.htm) TYPE="html" ;;
+                  *.pdf) TYPE="pdf" ;;
+                  *) TYPE="other" ;;
+                esac
+                SIZE=$(stat -c%s "$DEST" 2>/dev/null || echo "?")
+                echo "$TYPE  $SIZE  $DEST" >> "$MANIFEST"
+              fi
+            done < /tmp/attachment-urls.txt
+
+            cat "$MANIFEST"
+            echo "::endgroup::"
+          fi
+
+          echo "DESIGN_BUNDLE_DIR=/tmp/issue-attachments" >> "$GITHUB_ENV"
+
+      # ── 5. Pre-install Claude Code (workaround: upstream installer regression)
       #         anthropics/claude-code-action#1290 — installer exits 0 without
       #         placing the binary when ~/.local/bin doesn't exist. Remove once
       #         Anthropic ships a fix and bumps the @v1 tag.
@@ -144,20 +200,68 @@ jobs:
             If a skill matches, invoke it BEFORE writing code — its workflow supersedes
             the generic "Implement" step below for that subtask.
 
-            ## Handling ZIP / file attachments in issues
+            ## Issue attachments (PRE-EXTRACTED — read before coding)
 
-            When the issue body contains a GitHub attachment URL ending in `.zip`:
-            1. Download it: `curl -L -o /tmp/design.zip "<url>"`
-            2. Unzip to a temp dir: `unzip /tmp/design.zip -d /tmp/design/`
-            3. List what's inside: `find /tmp/design/ -type f | head -40`
-            4. Read only text/image files. Never `cat` a binary or APK file directly.
-            5. Delete the zip when done: `rm /tmp/design.zip`
+            Before this step ran, the workflow downloaded every attachment URL from the
+            issue body and extracted every zip. **Do NOT re-curl or re-unzip.**
 
-            ## Scope rules — STRICT
+            - **Manifest:** `/tmp/issue-attachments/manifest.txt` — read this FIRST.
+              If it contains only `none`, there are no attachments; skip to the standard flow.
+            - **Extracted zip contents:** `/tmp/issue-attachments/<zip-stem>/`
+            - **Image attachments:** `/tmp/issue-attachments/*.{png,jpg,jpeg,webp,svg}`
+            - **HTML mockups:** `/tmp/issue-attachments/*.html`
+
+            If the manifest lists any design source file (`*.jsx`, `*.html`, `tokens.css`,
+            `*.png`, `.design-canvas.state.json`), this is a **design-replication task** —
+            read "Design-replication mode" below before posting your plan.
+
+            ## Scope rules — STRICT (non-design issues only)
 
             - Only modify files needed to satisfy the issue's stated acceptance criteria.
             - **Never edit files under `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`, or top-level `build.gradle*`** unless the issue explicitly asks you to. Workflow and build configuration are off-limits.
             - Do not "improve" or "fix" unrelated code you happen to read along the way. If something looks wrong but is out of scope, mention it in the PR description instead of changing it.
+
+            ## Design-replication mode (overrides STRICT scope)
+
+            Activated when `/tmp/issue-attachments/manifest.txt` lists design source files
+            (`*.jsx`, `*.html`, `tokens.css`, `*.png`, `.design-canvas.state.json`).
+
+            **You MUST:**
+            1. Add new files — at minimum update `Color.kt` / `Type.kt` with design tokens and
+               create one Compose screen per `screens-*.jsx` source in the bundle.
+               "Edit only existing files" is a **wrong** reading of a design-replication issue.
+            2. Post a plan comment that **quotes concrete values from the design source** —
+               at least 5 hex codes from `tokens.css`, the screen filenames you will replicate,
+               and the drawable filenames you will import.
+               Plans that say "no new Color parameters" or "no UiState change" while a design
+               bundle is present are **AUTOMATICALLY INVALID** — rewrite the plan before editing.
+            3. Read color values from `tokens.css` / `*.jsx` const declarations / inline
+               `style={{ color: "#..." }}`. **Never hand-invent hex codes** when the bundle
+               ships a palette.
+            4. Copy referenced PNGs from the bundle into `app/src/main/res/drawable/`.
+               Use the `extract_assets.py` script from the `claude-design-to-android` skill.
+
+            **Plan template in design-replication mode** (replaces the standard template below):
+
+            ```
+            ## Implementation plan (pre-edit, design-replication)
+            **Design sources I read:** <paths under /tmp/issue-attachments/, with concrete values:
+              e.g. tokens.css → --bg=#0F172A, --primary=#4F46E5, screens-main.jsx → S01Home, S02Albums, …>
+            **Theme files I will CREATE or UPDATE:** Color.kt, Type.kt, Shapes.kt
+              — list every Color/TextStyle definition sourced verbatim from the design tokens.
+            **Compose screens I will CREATE:** <one entry per screens-*.jsx in the bundle>
+              — for each: the .jsx source file + target Kotlin path.
+            **Drawable assets I will COPY from the bundle:** <source path → res/drawable target>
+            **Existing screens I will UPDATE:** <list, or "none">
+            **Tests:** <list, or "deferred — design replication">
+            ```
+
+            For **image-only** attachments (manifest has `*.png`/`*.jpg` but no zip):
+            invoke the `android-ui-replicator` skill and pass the image paths from the manifest
+            as the design reference before writing any code.
+
+            The standard plan template and STRICT scope rules in "Instructions" below apply
+            only to non-design issues.
 
             ## Instructions
 

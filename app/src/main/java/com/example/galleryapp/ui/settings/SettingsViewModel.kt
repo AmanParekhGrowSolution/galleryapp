@@ -23,7 +23,7 @@ data class SettingsUiState(
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val prefs = PrefsManager(application)
+    private val prefs = PrefsManager.create(application)
 
     private val _uiState = MutableStateFlow(loadFromPrefs())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()

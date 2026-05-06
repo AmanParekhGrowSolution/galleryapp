@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import app.cash.turbine.test
+import com.example.galleryapp.data.local.PrefsManager
 import com.example.galleryapp.ui.vault.VaultUiState
 import com.example.galleryapp.ui.vault.VaultViewModel
 import kotlinx.coroutines.Dispatchers
@@ -36,9 +37,14 @@ class VaultViewModelTest {
         Dispatchers.setMain(testDispatcher)
         application = ApplicationProvider.getApplicationContext()
         // Reset vault prefs so each test starts from a clean state
-        application.getSharedPreferences("gallery_secure_prefs", Context.MODE_PRIVATE)
-            .edit().clear().commit()
+        plainPrefs().edit().clear().commit()
     }
+
+    private fun plainPrefs() =
+        application.getSharedPreferences("gallery_secure_prefs", Context.MODE_PRIVATE)
+
+    private fun createViewModel() =
+        VaultViewModel(application, PrefsManager(plainPrefs()))
 
     @After
     fun tearDown() {
@@ -47,7 +53,7 @@ class VaultViewModelTest {
 
     @Test
     fun `initial state is Locked with empty PIN`() {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         val state = viewModel.uiState.value
         assertTrue(state is VaultUiState.Locked)
         assertEquals("", (state as VaultUiState.Locked).enteredPin)
@@ -56,7 +62,7 @@ class VaultViewModelTest {
 
     @Test
     fun `appendDigit adds digits to enteredPin`() {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
         val state = viewModel.uiState.value as? VaultUiState.Locked
@@ -65,7 +71,7 @@ class VaultViewModelTest {
 
     @Test
     fun `deleteDigit removes last digit from enteredPin`() {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
         viewModel.deleteDigit()
@@ -75,7 +81,7 @@ class VaultViewModelTest {
 
     @Test
     fun `incorrect PIN shows error and resets enteredPin`() = runTest {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         viewModel.appendDigit("9")
         viewModel.appendDigit("9")
         viewModel.appendDigit("9")
@@ -88,7 +94,7 @@ class VaultViewModelTest {
 
     @Test
     fun `correct default PIN transitions to Unlocked`() = runTest {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
         viewModel.appendDigit("3")
@@ -100,7 +106,7 @@ class VaultViewModelTest {
 
     @Test
     fun `lock transitions from Unlocked back to Locked`() = runTest {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
         viewModel.appendDigit("3")
@@ -113,7 +119,7 @@ class VaultViewModelTest {
 
     @Test
     fun `five failed attempts trigger lockout`() = runTest {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         // First 4 failures — advance time to let each complete
         repeat(4) {
             viewModel.appendDigit("9"); viewModel.appendDigit("9")
@@ -132,7 +138,7 @@ class VaultViewModelTest {
 
     @Test
     fun `lockout countdown decrements over time`() = runTest {
-        val viewModel = VaultViewModel(application)
+        val viewModel = createViewModel()
         // Trigger 5 failures
         repeat(4) {
             viewModel.appendDigit("9"); viewModel.appendDigit("9")

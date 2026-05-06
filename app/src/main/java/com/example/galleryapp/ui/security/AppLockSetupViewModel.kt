@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.update
 
 class AppLockSetupViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val prefs = PrefsManager(application)
+    private val prefs = PrefsManager.create(application)
     private val _uiState = MutableStateFlow<AppLockSetupUiState>(AppLockSetupUiState.PinEntry())
     val uiState: StateFlow<AppLockSetupUiState> = _uiState.asStateFlow()
 

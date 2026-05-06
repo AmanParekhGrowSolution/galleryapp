@@ -30,9 +30,14 @@ sealed interface VaultUiState {
 private val LOCKOUT_SECONDS_BY_FAIL = mapOf(5 to 30, 6 to 60, 7 to 120, 8 to 300)
 private const val MAX_FAIL_LOCKOUT_SECONDS = 300
 
-class VaultViewModel(application: Application) : AndroidViewModel(application) {
+class VaultViewModel(
+    application: Application,
+    private val prefs: PrefsManager
+) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(application, PrefsManager.create(application))
+
     private val repository = GalleryRepositoryImpl()
-    private val prefs = PrefsManager(application)
     private val _uiState = MutableStateFlow<VaultUiState>(VaultUiState.Locked())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
 

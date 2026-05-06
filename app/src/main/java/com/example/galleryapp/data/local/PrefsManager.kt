@@ -2,12 +2,11 @@ package com.example.galleryapp.data.local
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import java.security.MessageDigest
 
-class PrefsManager(context: Context) {
-
-    private val prefs: SharedPreferences =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+class PrefsManager(private val prefs: SharedPreferences) {
 
     // ── Vault PIN ─────────────────────────────────────────────────────────────
 
@@ -71,6 +70,21 @@ class PrefsManager(context: Context) {
 
     companion object {
         private const val PREFS_NAME = "gallery_secure_prefs"
+
+        fun create(context: Context): PrefsManager {
+            val masterKey = MasterKey.Builder(context.applicationContext)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            return PrefsManager(
+                EncryptedSharedPreferences.create(
+                    context.applicationContext,
+                    PREFS_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            )
+        }
 
         const val KEY_VAULT_PIN_HASH = "vault_pin_hash"
         const val KEY_VAULT_FAIL_COUNT = "vault_fail_count"

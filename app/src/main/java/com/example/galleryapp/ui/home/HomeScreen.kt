@@ -78,6 +78,9 @@ private val quickItems = listOf(
 fun HomeScreen(
     onPhotoClick: (Long) -> Unit,
     onVaultClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
+    onPremiumClick: () -> Unit = {},
+    onSearchClick: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -96,6 +99,9 @@ fun HomeScreen(
                 state = state,
                 onPhotoClick = onPhotoClick,
                 onVaultClick = onVaultClick,
+                onSettingsClick = onSettingsClick,
+                onPremiumClick = onPremiumClick,
+                onSearchClick = onSearchClick,
                 onFilterSelect = viewModel::selectFilter,
                 onToggleSelection = viewModel::togglePhotoSelection
             )
@@ -113,6 +119,9 @@ private fun HomeContent(
     state: HomeUiState.Success,
     onPhotoClick: (Long) -> Unit,
     onVaultClick: () -> Unit,
+    onSettingsClick: () -> Unit,
+    onPremiumClick: () -> Unit,
+    onSearchClick: () -> Unit,
     onFilterSelect: (PhotoFilter) -> Unit,
     onToggleSelection: (Long) -> Unit
 ) {
@@ -123,7 +132,11 @@ private fun HomeContent(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            HomeTopBar()
+            HomeTopBar(
+                onSettingsClick = onSettingsClick,
+                onPremiumClick = onPremiumClick,
+                onSearchClick = onSearchClick
+            )
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -158,7 +171,11 @@ private fun HomeContent(
 }
 
 @Composable
-private fun HomeTopBar() {
+private fun HomeTopBar(
+    onSettingsClick: () -> Unit,
+    onPremiumClick: () -> Unit,
+    onSearchClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -166,7 +183,7 @@ private fun HomeTopBar() {
             .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = {}) {
+        IconButton(onClick = onSettingsClick) {
             Icon(
                 imageVector = Icons.Default.Menu,
                 contentDescription = stringResource(R.string.content_desc_menu),
@@ -186,7 +203,7 @@ private fun HomeTopBar() {
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .background(Brush.linearGradient(tryFreeGradient))
-                .clickable {}
+                .clickable(onClick = onPremiumClick)
                 .padding(horizontal = 14.dp, vertical = 6.dp)
         ) {
             Text(
@@ -196,7 +213,7 @@ private fun HomeTopBar() {
                 fontWeight = FontWeight.SemiBold
             )
         }
-        IconButton(onClick = {}) {
+        IconButton(onClick = onSearchClick) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = stringResource(R.string.content_desc_search),

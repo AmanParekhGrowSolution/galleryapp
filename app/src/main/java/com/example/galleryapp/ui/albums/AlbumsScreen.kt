@@ -54,6 +54,7 @@ fun AlbumsScreen(
     onVaultClick: () -> Unit,
     onCleanerClick: () -> Unit,
     onPhotoClick: (Long) -> Unit,
+    onSettingsClick: () -> Unit = {},
     viewModel: AlbumsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -71,7 +72,8 @@ fun AlbumsScreen(
             is AlbumsUiState.Success -> AlbumsContent(
                 state = state,
                 onVaultClick = onVaultClick,
-                onCleanerClick = onCleanerClick
+                onCleanerClick = onCleanerClick,
+                onSettingsClick = onSettingsClick
             )
             is AlbumsUiState.Error -> Text(
                 text = state.message,
@@ -86,10 +88,11 @@ fun AlbumsScreen(
 private fun AlbumsContent(
     state: AlbumsUiState.Success,
     onVaultClick: () -> Unit,
-    onCleanerClick: () -> Unit
+    onCleanerClick: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-        item { AlbumsTopBar() }
+        item { AlbumsTopBar(onSettingsClick = onSettingsClick) }
         item { FeaturedGrid(albums = state.featured) }
         item { SectionHeader(label = stringResource(R.string.my_albums), count = state.myAlbums.size) }
         item { MyAlbumsGrid(albums = state.myAlbums) }
@@ -97,7 +100,7 @@ private fun AlbumsContent(
 }
 
 @Composable
-private fun AlbumsTopBar() {
+private fun AlbumsTopBar(onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -105,7 +108,7 @@ private fun AlbumsTopBar() {
             .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = {}) {
+        IconButton(onClick = onSettingsClick) {
             Icon(
                 imageVector = Icons.Default.Menu,
                 contentDescription = stringResource(R.string.content_desc_menu),

@@ -94,14 +94,24 @@ fun MainScreen(
             composable(Screen.Home) {
                 HomeScreen(
                     onPhotoClick = onNavigateToPhotoViewer,
-                    onVaultClick = onNavigateToVault
+                    onVaultClick = onNavigateToVault,
+                    onSettingsClick = onNavigateToSettings,
+                    onPremiumClick = onNavigateToPremium,
+                    onSearchClick = {
+                        innerNav.navigate(Screen.Search) {
+                            popUpTo(innerNav.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
                 )
             }
             composable(Screen.Albums) {
                 AlbumsScreen(
                     onVaultClick = onNavigateToVault,
                     onCleanerClick = onNavigateToCleaner,
-                    onPhotoClick = onNavigateToPhotoViewer
+                    onPhotoClick = onNavigateToPhotoViewer,
+                    onSettingsClick = onNavigateToSettings
                 )
             }
             composable(Screen.Search) {
@@ -112,6 +122,7 @@ fun MainScreen(
                     onMapClick = onNavigateToMap,
                     onPhotoClick = onNavigateToPhotoViewer,
                     onStoryClick = onNavigateToMemoriesStory,
+                    onSettingsClick = onNavigateToSettings
                 )
             }
         }

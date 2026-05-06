@@ -22,9 +22,9 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Backspace
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
@@ -101,7 +101,7 @@ private fun LockedVault(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
             }
         }
 
@@ -210,7 +210,7 @@ private fun NumericKeypad(onDigit: (String) -> Unit, onDelete: () -> Unit) {
                                 .clickable { onDelete() }
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Backspace,
+                                imageVector = Icons.AutoMirrored.Filled.Backspace,
                                 contentDescription = "Delete",
                                 tint = Color.White,
                                 modifier = Modifier.size(26.dp)
@@ -293,7 +293,7 @@ private fun UnlockedTopBar(onBack: () -> Unit, onLock: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.vault_title), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)

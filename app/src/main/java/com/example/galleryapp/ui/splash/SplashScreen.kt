@@ -43,11 +43,12 @@ private val iconInnerGradient = listOf(Color(0xFF7C3AED), Color(0xFF4F46E5))
 @Composable
 fun SplashScreen(
     onNavigateToOnboarding: () -> Unit,
-    onNavigateToMain: () -> Unit
+    onNavigateToMain: () -> Unit,
+    isFirstRun: Boolean = false
 ) {
     LaunchedEffect(Unit) {
         delay(2000)
-        onNavigateToMain()
+        if (isFirstRun) onNavigateToOnboarding() else onNavigateToMain()
     }
 
     Box(

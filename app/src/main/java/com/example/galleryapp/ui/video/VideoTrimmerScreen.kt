@@ -19,13 +19,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Crop
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -318,7 +318,7 @@ private fun TrimToolBar(
         Triple(TrimTool.TRIM, Icons.Default.Crop, R.string.trim_tool_trim),
         Triple(TrimTool.FRAME, Icons.Default.Image, R.string.trim_tool_frame),
         Triple(TrimTool.SPEED, Icons.Default.Speed, R.string.trim_tool_speed),
-        Triple(TrimTool.MUTE, Icons.Default.VolumeOff, R.string.trim_tool_mute),
+        Triple(TrimTool.MUTE, Icons.AutoMirrored.Filled.VolumeOff, R.string.trim_tool_mute),
         Triple(TrimTool.SPLIT, Icons.Default.ContentCut, R.string.trim_tool_split),
     )
 

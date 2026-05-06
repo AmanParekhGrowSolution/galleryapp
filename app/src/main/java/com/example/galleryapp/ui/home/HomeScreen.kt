@@ -77,6 +77,7 @@ private val quickItems = listOf(
 @Composable
 fun HomeScreen(
     onPhotoClick: (Long) -> Unit,
+    onVaultClick: () -> Unit = {},
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,6 +95,7 @@ fun HomeScreen(
             is HomeUiState.Success -> HomeContent(
                 state = state,
                 onPhotoClick = onPhotoClick,
+                onVaultClick = onVaultClick,
                 onFilterSelect = viewModel::selectFilter,
                 onToggleSelection = viewModel::togglePhotoSelection
             )
@@ -110,6 +112,7 @@ fun HomeScreen(
 private fun HomeContent(
     state: HomeUiState.Success,
     onPhotoClick: (Long) -> Unit,
+    onVaultClick: () -> Unit,
     onFilterSelect: (PhotoFilter) -> Unit,
     onToggleSelection: (Long) -> Unit
 ) {
@@ -132,7 +135,7 @@ private fun HomeContent(
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
-            QuickAccessRow()
+            QuickAccessRow(onVaultClick = onVaultClick)
         }
 
         state.sections.forEach { section ->
@@ -238,7 +241,7 @@ private fun FilterChipsRow(
 }
 
 @Composable
-private fun QuickAccessRow() {
+private fun QuickAccessRow(onVaultClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -246,17 +249,18 @@ private fun QuickAccessRow() {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        quickItems.forEach { item ->
-            QuickAccessItem(item)
+        quickItems.forEachIndexed { index, item ->
+            val onClick = if (index == 3) onVaultClick else ({})
+            QuickAccessItem(item = item, onClick = onClick)
         }
     }
 }
 
 @Composable
-private fun QuickAccessItem(item: QuickItem) {
+private fun QuickAccessItem(item: QuickItem, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.clickable {}
+        modifier = Modifier.clickable(onClick = onClick)
     ) {
         Box(
             contentAlignment = Alignment.Center,

@@ -10,8 +10,8 @@ import androidx.compose.ui.graphics.Color
 private val LightColorScheme = lightColorScheme(
     primary = BrandBlue,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFDDE8FF),
-    onPrimaryContainer = Color(0xFF001645),
+    primaryContainer = BrandBlueTint,
+    onPrimaryContainer = BrandBlueDark,
     secondary = AccentPurple,
     onSecondary = Color.White,
     tertiary = AccentTeal,
@@ -20,7 +20,7 @@ private val LightColorScheme = lightColorScheme(
     onBackground = OnSurfaceDark,
     surface = SurfaceCard,
     onSurface = OnSurfaceDark,
-    surfaceVariant = Color(0xFFEEF0F5),
+    surfaceVariant = BgLight3,
     onSurfaceVariant = SubtextGray,
     outline = DividerLight,
     error = AccentRed,
@@ -32,8 +32,11 @@ private val DarkColorScheme = darkColorScheme(
     onPrimary = Color.White,
     background = DarkBg,
     onBackground = Color.White,
-    surface = Color(0xFF1A1A1A),
+    surface = DarkBg2,
     onSurface = Color.White,
+    surfaceVariant = DarkCard,
+    onSurfaceVariant = DarkSubtext,
+    outline = DarkBorder,
     error = AccentRed,
     onError = Color.White,
 )
@@ -48,6 +51,7 @@ fun GalleryappTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
         content = content
     )
 }

@@ -10,8 +10,22 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.galleryapp.ui.backup.BackupScreen
+import com.example.galleryapp.ui.cleaner.CleanerResultScreen
+import com.example.galleryapp.ui.cleaner.CleanerRunningScreen
 import com.example.galleryapp.ui.cleaner.CleanerScreen
 import com.example.galleryapp.ui.collage.CollageMakerScreen
+import com.example.galleryapp.ui.dialogs.CreateAlbumScreen
+import com.example.galleryapp.ui.dialogs.DeleteConfirmScreen
+import com.example.galleryapp.ui.dialogs.MapPlaceSheetScreen
+import com.example.galleryapp.ui.dialogs.MoveToAlbumScreen
+import com.example.galleryapp.ui.dialogs.MultiSelectScreen
+import com.example.galleryapp.ui.dialogs.PhotoInfoScreen
+import com.example.galleryapp.ui.dialogs.PremiumNudgeScreen
+import com.example.galleryapp.ui.dialogs.RenameScreen
+import com.example.galleryapp.ui.dialogs.SetAsScreen
+import com.example.galleryapp.ui.dialogs.ShareSheetScreen
+import com.example.galleryapp.ui.dialogs.SlideshowSettingsScreen
+import com.example.galleryapp.ui.dialogs.SortFilterScreen
 import com.example.galleryapp.ui.editor.AIEditorScreen
 import com.example.galleryapp.ui.map.MapScreen
 import com.example.galleryapp.ui.memories.MemoriesStoryScreen
@@ -190,6 +204,64 @@ fun AppNavigation() {
 
         composable(Screen.Map) {
             MapScreen(onBack = { navController.popBackStack() })
+        }
+
+        // ── Wave 2 — overlays and dialogs ──────────────────────────────────────
+
+        composable(Screen.MultiSelect) {
+            MultiSelectScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.MoveToAlbum) {
+            MoveToAlbumScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.CreateAlbum) {
+            CreateAlbumScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.DeleteConfirm) {
+            DeleteConfirmScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.ShareSheet) {
+            ShareSheetScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.SortFilter) {
+            SortFilterScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.PhotoInfo) {
+            PhotoInfoScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.Rename) {
+            RenameScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.SetAs) {
+            SetAsScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.SlideshowSettings) {
+            SlideshowSettingsScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.CleanerRunning) {
+            CleanerRunningScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.CleanerResult) {
+            CleanerResultScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.MapPlaceSheet) {
+            MapPlaceSheetScreen(onClose = { navController.popBackStack() })
+        }
+
+        composable(Screen.PremiumNudge) {
+            PremiumNudgeScreen(onClose = { navController.popBackStack() })
         }
     }
 }

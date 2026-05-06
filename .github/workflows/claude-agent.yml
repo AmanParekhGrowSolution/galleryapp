@@ -78,7 +78,27 @@ jobs:
               ].join('\n'),
             });
 
-      # ── 4. Run Claude Code Agent (OAuth — no API key needed) ──────────────
+      # ── 4. Pre-install Claude Code (workaround: upstream installer regression)
+      #         anthropics/claude-code-action#1290 — installer exits 0 without
+      #         placing the binary when ~/.local/bin doesn't exist. Remove once
+      #         Anthropic ships a fix and bumps the @v1 tag.
+      - name: Pre-install Claude Code (workaround for upstream installer regression)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "Installing Claude Code via official native installer..."
+            curl -fsSL https://claude.ai/install.sh | bash
+          fi
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "::error::Claude Code binary still missing after install.sh — upstream issue #1290 may have worsened. Consider pinning the action SHA until Anthropic ships a fix."
+            exit 1
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/claude" --version
+
+      # ── 5. Run Claude Code Agent (OAuth — no API key needed) ──────────────
       - name: Run Claude Code Agent
         uses: anthropics/claude-code-action@v1
         with:

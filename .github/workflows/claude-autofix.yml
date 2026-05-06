@@ -92,7 +92,26 @@ jobs:
           git config user.name  "claude-autofix[bot]"
           git config user.email "claude-autofix@users.noreply.github.com"
 
-      # ── 5. Run Claude to fix the violations ───────────────────────────────
+      # ── 5. Pre-install Claude Code (workaround: upstream installer regression)
+      #         anthropics/claude-code-action#1290 — remove once upstream ships a fix
+      - name: Pre-install Claude Code (workaround for upstream installer regression)
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "Installing Claude Code via official native installer..."
+            curl -fsSL https://claude.ai/install.sh | bash
+          fi
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "::error::Claude Code binary still missing after install.sh — upstream issue #1290 may have worsened."
+            exit 1
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/claude" --version
+
+      # ── 6. Run Claude to fix the violations ───────────────────────────────
       - name: Run Claude Auto-Fix
         if: steps.attempt_check.outputs.max_reached == 'false'
         uses: anthropics/claude-code-action@v1

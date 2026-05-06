@@ -1,0 +1,298 @@
+name: 🔧 Claude CI Auto-Fix
+
+on:
+  workflow_run:
+    workflows: ["🤖 Android CI"]
+    types: [completed]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CLAUDE_CODE_DEBUG_LOG_LEVEL: verbose
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
+  id-token: write
+
+jobs:
+  ci-autofix:
+    name: Auto-fix Android CI failures
+    # Only run when android-ci failed on a same-repo PR (forks have empty pull_requests array)
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0].number != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    concurrency:
+      group: claude-ci-autofix-pr-${{ github.event.workflow_run.pull_requests[0].number }}
+      cancel-in-progress: false
+
+    steps:
+      # ── 1. Check attempt count (max 3) ────────────────────────────────────
+      - name: Check attempt count
+        id: attempt_check
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          PR=${{ github.event.workflow_run.pull_requests[0].number }}
+          REPO=${{ github.repository }}
+
+          PRIOR=$(gh api "repos/$REPO/issues/$PR/labels" \
+            --jq '[.[] | select(.name | startswith("ci-autofix: attempt-"))] | length')
+          NEXT=$((PRIOR + 1))
+          echo "attempt=$NEXT" >> "$GITHUB_OUTPUT"
+
+          if [ "$NEXT" -gt 3 ]; then
+            echo "max_reached=true" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/$PR/comments" \
+              -f body="## 🛑 CI autofix gave up after 3 attempts
+
+          Claude tried to fix the Android CI failures 3 times without success. **Manual intervention required.**
+
+          Reproduce locally:
+          \`\`\`bash
+          ./gradlew assembleDebug --stacktrace   # build
+          ./gradlew test                          # unit tests
+          ./gradlew lint                          # lint
+          \`\`\`
+          Failed run: ${{ github.event.workflow_run.html_url }}"
+          else
+            echo "max_reached=false" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/$PR/labels" \
+              -f "labels[]=ci-autofix: attempt-$NEXT"
+          fi
+
+      # ── 2. Checkout the PR branch (write-capable) ─────────────────────────
+      - name: Checkout PR branch
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.pull_requests[0].head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.AGENT_PAT }}
+
+      # ── 3. JDK so Claude can verify with ./gradlew ────────────────────────
+      - name: Set up JDK 17
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Cache Gradle
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Grant Gradle permission
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: chmod +x gradlew
+
+      # ── 4. Download failure logs and artifacts from the failed CI run ─────
+      - name: Download CI failure logs and artifacts
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUN_ID=${{ github.event.workflow_run.id }}
+
+          # Which jobs failed?
+          gh run view "$RUN_ID" \
+            --json jobs \
+            --jq '.jobs[] | select(.conclusion=="failure") | .name' \
+            > /tmp/failed-jobs.txt
+          echo "=== Failed jobs ==="
+          cat /tmp/failed-jobs.txt
+
+          # Full failure log, bounded to 600 lines so Claude's prompt stays manageable
+          gh run view "$RUN_ID" --log-failed > /tmp/ci-failed.log 2>&1 || true
+          tail -n 600 /tmp/ci-failed.log > /tmp/ci-failed.tail.log
+
+          # Download artifacts by failed job type
+          mkdir -p /tmp/ci-artifacts/unit /tmp/ci-artifacts/lint
+
+          if grep -q "Unit Tests" /tmp/failed-jobs.txt; then
+            gh run download "$RUN_ID" -n unit-test-results \
+              -D /tmp/ci-artifacts/unit/ 2>/dev/null \
+              || echo "unit-test-results artifact not yet available"
+          fi
+
+          if grep -q "Lint Check" /tmp/failed-jobs.txt; then
+            gh run download "$RUN_ID" -n lint-report \
+              -D /tmp/ci-artifacts/lint/ 2>/dev/null \
+              || echo "lint-report artifact not yet available"
+          fi
+
+      # ── 5. Configure git identity for the agent's commit ──────────────────
+      - name: Configure git
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: |
+          git config user.name  "claude-ci-autofix[bot]"
+          git config user.email "claude-ci-autofix@users.noreply.github.com"
+
+      # ── 6. Pre-install Claude Code (workaround: upstream installer regression)
+      #         anthropics/claude-code-action#1290 — remove once upstream ships a fix
+      - name: Pre-install Claude Code (workaround for upstream installer regression)
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "Installing Claude Code via official native installer..."
+            curl -fsSL https://claude.ai/install.sh | bash
+          fi
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "::error::Claude Code binary still missing after install.sh — upstream issue #1290 may have worsened."
+            exit 1
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/claude" --version
+
+      # ── 7. Run Claude to fix the failures ─────────────────────────────────
+      - name: Run Claude CI Auto-Fix
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 80
+            --permission-mode bypassPermissions
+            --debug-file ${{ runner.temp }}/claude-debug.json
+
+          prompt: |
+            You are auto-fixing Android CI failures on PR #${{ github.event.workflow_run.pull_requests[0].number }}.
+            This is **attempt ${{ steps.attempt_check.outputs.attempt }} of 3**.
+            Triggering CI run: ${{ github.event.workflow_run.html_url }}
+
+            ## Context
+
+            The workflow `🤖 Android CI` failed on this PR. Failure details are staged in local files
+            — read them with your tools before touching any code:
+
+            - **`/tmp/failed-jobs.txt`** — names of the failed jobs (one per line)
+            - **`/tmp/ci-failed.tail.log`** — last 600 lines of the failed-job output
+            - **`/tmp/ci-artifacts/unit/`** — unit test HTML report + XML (populated when Unit Tests failed)
+            - **`/tmp/ci-artifacts/lint/`** — lint HTML report (populated when Lint Check failed)
+
+            ## Available skills
+
+            Auto-invoke via the `Skill` tool when relevant to the failure:
+            - **`android-admob`** — for failures in AdMob / ad-related code
+            - **`android-ui-replicator`** — for failures in screens replicated from a screenshot
+
+            ## Off-limits — do NOT edit
+
+            - `.github/**`
+            - `gradle/`, `gradle.properties`, `settings.gradle*`
+            - Top-level `build.gradle*` (module-level `app/build.gradle*` is OK)
+            - `local.properties`
+
+            You must NOT:
+            - Downgrade or change dependencies
+            - Suppress lint rules wholesale (`abortOnError = false`, `@Suppress("all")`, `lintOptions { disable ... }`)
+            - Comment out failing tests or add `@Ignore`
+            - Edit CI workflow files
+
+            Fix the underlying code. If the test or lint rule is genuinely wrong and needs to be changed,
+            post a comment explaining why and exit without pushing — a human will decide.
+
+            ## Steps
+
+            1. Read `CLAUDE.md` at the repo root — source of truth for all project rules.
+
+            2. Read `/tmp/failed-jobs.txt` to see which jobs failed, then diagnose:
+               - **Build Debug APK** → Kotlin compile error. Read `/tmp/ci-failed.tail.log` for the stacktrace.
+               - **Unit Tests** → Read `/tmp/ci-artifacts/unit/index.html` and per-test XML files for assertion failures and stacktraces.
+               - **Lint Check** → Read `/tmp/ci-artifacts/lint/lint-results-debug.html` for the issue list with file + line numbers.
+
+            3. Make the **minimal** fix in app source or test code only. Stay within the off-limits list.
+
+            4. Verify locally — every command must exit 0:
+               ```
+               ./gradlew assembleDebug --no-daemon --stacktrace
+               ./gradlew test --no-daemon
+               ./gradlew lint --no-daemon
+               ```
+
+            5. Run the deterministic compliance script — must exit 0:
+               ```
+               bash scripts/check-claude-md.sh --diff origin/main
+               ```
+               Do not proceed to step 6 if this exits non-zero.
+
+            6. Only if steps 4 and 5 both pass:
+               ```
+               git add -A
+               git commit -m "fix(ci): resolve Android CI failures (ci-autofix attempt ${{ steps.attempt_check.outputs.attempt }})"
+               git pull --rebase origin ${{ github.event.workflow_run.pull_requests[0].head.ref }}
+               git push
+               gh pr comment ${{ github.event.workflow_run.pull_requests[0].number }} \
+                 --body "🔧 CI autofix attempt ${{ steps.attempt_check.outputs.attempt }} pushed — <one-line summary of what you fixed>. Re-running Android CI..."
+               ```
+
+            7. If you cannot fix without touching off-limits files, or verification still fails:
+               - Do NOT push.
+               - Post a comment on the PR explaining what you tried and why it didn't work, then exit.
+
+      # ── 7. Upload Claude debug log ─────────────────────────────────────────
+      - name: Upload Claude debug log
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-debug-ciautofix-pr${{ github.event.workflow_run.pull_requests[0].number }}-attempt${{ steps.attempt_check.outputs.attempt }}-run${{ github.run_id }}
+          path: ${{ runner.temp }}/claude-debug.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ── 8. Deterministic CLAUDE.md gate ───────────────────────────────────
+      # Catches CLAUDE.md regressions Claude's fix may have introduced — fail visibly
+      # rather than letting the next claude-review run surface them.
+      - name: Verify CLAUDE.md compliance (deterministic)
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: |
+          bash scripts/check-claude-md.sh --diff origin/main \
+            || {
+              echo "::error::Deterministic linter finds BLOCKING violations after CI autofix — the fix introduced a CLAUDE.md regression. See output above."
+              exit 1
+            }
+
+      # ── 9. Off-limits diff guard ───────────────────────────────────────────
+      # Defense-in-depth: fail the run if Claude edited files it was told not to touch.
+      - name: Check off-limits files were not edited
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: |
+          VIOLATIONS=$(git diff --name-only origin/main...HEAD \
+            | grep -E '^(\.github/|gradle/|gradle\.properties|settings\.gradle|build\.gradle|local\.properties)' \
+            || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::Claude edited off-limits files: $VIOLATIONS"
+            exit 1
+          fi
+
+      # ── 10. Failure comment ────────────────────────────────────────────────
+      - name: Post failure comment
+        if: failure() && steps.attempt_check.outputs.max_reached == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh api -X POST \
+            "repos/${{ github.repository }}/issues/${{ github.event.workflow_run.pull_requests[0].number }}/comments" \
+            -f body="## ⚠️ CI autofix attempt ${{ steps.attempt_check.outputs.attempt }} crashed
+
+          The autofix workflow itself errored. [View logs]($RUN_URL).
+
+          Push a new commit to retry (up to 3 total attempts)."

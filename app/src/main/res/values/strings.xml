@@ -58,8 +58,17 @@
     <string name="cleaner_title">Smart Cleaner</string>
     <string name="storage_used">%1$s / %2$s used</string>
     <string name="free_up">You can free up %1$s</string>
+    <string name="you_can_free_up">You can free up</string>
     <string name="clean_now">Clean Now</string>
     <string name="review">Review</string>
+    <string name="categories">Categories</string>
+    <string name="compress_convert">Compress &amp; Convert</string>
+    <string name="compress_photos">Compress photos</string>
+    <string name="compress_videos">Compress videos</string>
+    <string name="save_pct_photos">Save ~30%</string>
+    <string name="save_pct_videos">Save ~50%</string>
+    <string name="storage_photos_video">Photos &amp; Video</string>
+    <string name="storage_other">Other</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>

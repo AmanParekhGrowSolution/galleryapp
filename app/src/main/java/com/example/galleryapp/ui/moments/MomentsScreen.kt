@@ -21,11 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Face
-import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,9 +40,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
+import com.example.galleryapp.ui.theme.BrandBlue
+import com.example.galleryapp.ui.theme.OnSurfaceDark
 
-private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-private val darkOverlay = listOf(Color.Transparent, Color(0xCC000000))
+private val darkOverlay = listOf(Color.Transparent, Color(0xDD000000))
 
 @Composable
 fun MomentsScreen(
@@ -57,24 +54,16 @@ fun MomentsScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Box(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+            .background(Color.White),
+        contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        LazyColumn(contentPadding = PaddingValues(bottom = 16.dp)) {
-            item { MomentsTopBar() }
-            item { OnThisDayCard() }
-            item { RecentStoriesRow(stories = state.stories, onStoryClick = onStoryClick) }
-            item {
-                SectionLabel(stringResource(R.string.people))
-                PeopleRow(people = state.people)
-            }
-            item {
-                SectionLabel(stringResource(R.string.places))
-                PlacesGrid(places = state.places, onMapClick = onMapClick)
-            }
-        }
+        item { MomentsTopBar() }
+        item { OnThisDayCard() }
+        item { StoriesSectionHeader() }
+        item { StoriesRow(stories = state.stories, onStoryClick = onStoryClick) }
     }
 }
 
@@ -83,21 +72,25 @@ private fun MomentsTopBar() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .background(Color.White)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = {}) {
-            Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.content_desc_menu), tint = Color.White)
-        }
         Text(
             text = stringResource(R.string.moments_title),
-            color = Color.White,
+            color = OnSurfaceDark,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp)
         )
         IconButton(onClick = {}) {
-            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = Color.White)
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = stringResource(R.string.content_desc_more),
+                tint = OnSurfaceDark
+            )
         }
     }
 }
@@ -107,10 +100,11 @@ private fun OnThisDayCard() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .aspectRatio(4f / 5f)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .aspectRatio(9f / 12f)
             .clip(RoundedCornerShape(20.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF1E3A5F), Color(0xFF0D2D4A))))
+            .background(Color(0xFF6B3FA0))
+            .clickable {}
     ) {
         Box(
             modifier = Modifier
@@ -121,15 +115,16 @@ private fun OnThisDayCard() {
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(16.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.2f), Color.White.copy(alpha = 0.2f))))
-                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(Color.White.copy(alpha = 0.25f))
+                .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             Text(
-                text = stringResource(R.string.on_this_day),
+                text = "${stringResource(R.string.on_this_day)} · ${stringResource(R.string.one_year_ago)}",
                 color = Color.White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp
             )
         }
         Column(
@@ -138,21 +133,15 @@ private fun OnThisDayCard() {
                 .padding(16.dp)
         ) {
             Text(
-                text = stringResource(R.string.one_year_ago_one_place),
-                color = Color.White.copy(alpha = 0.87f),
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 1.sp
-            )
-            Text(
                 text = "Goa, Apr 2025",
                 color = Color.White,
-                fontSize = 22.sp,
+                fontSize = 24.sp,
                 fontWeight = FontWeight.Bold
             )
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = "32 photos · 4 videos",
-                color = Color.White.copy(alpha = 0.87f),
+                color = Color.White.copy(alpha = 0.85f),
                 fontSize = 13.sp
             )
         }
@@ -163,7 +152,7 @@ private fun OnThisDayCard() {
                 .padding(16.dp)
                 .size(48.dp)
                 .clip(CircleShape)
-                .background(Brush.linearGradient(listOf(Color.White.copy(alpha = 0.2f), Color.White.copy(alpha = 0.2f))))
+                .background(Color.White.copy(alpha = 0.2f))
         ) {
             Icon(
                 imageVector = Icons.Default.PlayArrow,
@@ -176,156 +165,62 @@ private fun OnThisDayCard() {
 }
 
 @Composable
-private fun RecentStoriesRow(stories: List<MomentStory>, onStoryClick: () -> Unit = {}) {
-    Column {
-        SectionLabel("Recent Stories")
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(stories) { story ->
-                Box(
-                    modifier = Modifier
-                        .width(130.dp)
-                        .aspectRatio(3f / 4f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(Brush.linearGradient(listOf(Color(story.colorHex), Color(story.colorHex).copy(alpha = 0.8f))))
-                        .clickable { onStoryClick() }
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Brush.verticalGradient(darkOverlay))
-                    )
-                    Text(
-                        text = story.title,
-                        color = Color.White,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(10.dp)
-                    )
-                }
-            }
-        }
+private fun StoriesSectionHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.recent_stories),
+            color = OnSurfaceDark,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = stringResource(R.string.see_all),
+            color = BrandBlue,
+            fontSize = 13.sp
+        )
     }
 }
 
 @Composable
-private fun PeopleRow(people: List<MomentPerson>) {
+private fun StoriesRow(stories: List<MomentStory>, onStoryClick: () -> Unit) {
     LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        items(people) { person ->
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clip(CircleShape)
-                        .background(Brush.linearGradient(listOf(Color(person.colorHex), Color(person.colorHex).copy(alpha = 0.8f))))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Face,
-                        contentDescription = person.name,
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(person.name, color = Color.White.copy(alpha = 0.87f), fontSize = 12.sp)
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlacesGrid(places: List<MomentPlace>, onMapClick: () -> Unit) {
-    Column(
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        places.chunked(2).forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { place ->
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .aspectRatio(16f / 10f)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Brush.linearGradient(listOf(Color(place.colorHex), Color(place.colorHex).copy(alpha = 0.8f))))
-                            .clickable { onMapClick() }
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Brush.verticalGradient(darkOverlay))
+        items(stories, key = { it.title }) { story ->
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .aspectRatio(3f / 4f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(Color(story.colorHex), Color(story.colorHex).copy(alpha = 0.7f))
                         )
-                        Row(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Place,
-                                contentDescription = stringResource(R.string.content_desc_place_pin),
-                                tint = Color.White,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = "${place.name} ${place.count}",
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(start = 4.dp)
-                            )
-                        }
-                    }
-                }
-                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
-            }
-        }
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    Brush.linearGradient(listOf(Color(0xFF6366F1).copy(alpha = 0.15f), Color(0xFF8B5CF6).copy(alpha = 0.15f)))
-                )
-                .clickable { onMapClick() }
-                .padding(vertical = 14.dp)
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Default.Map,
-                    contentDescription = stringResource(R.string.map_title),
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    )
+                    .clickable { onStoryClick() }
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(darkOverlay))
                 )
                 Text(
-                    text = stringResource(R.string.map_title),
+                    text = story.title,
                     color = Color.White,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(10.dp)
                 )
             }
         }
     }
-}
-
-@Composable
-private fun SectionLabel(label: String) {
-    Text(
-        text = label,
-        color = Color.White,
-        fontSize = 16.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
-    )
 }

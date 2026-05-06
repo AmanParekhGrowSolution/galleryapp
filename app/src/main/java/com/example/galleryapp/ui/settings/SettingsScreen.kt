@@ -2,20 +2,16 @@ package com.example.galleryapp.ui.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -29,6 +25,9 @@ import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Switch
@@ -43,19 +42,22 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
+import com.example.galleryapp.ui.theme.BrandBlue
+import com.example.galleryapp.ui.theme.OnSurfaceDark
+import com.example.galleryapp.ui.theme.SectionLabelGray
+import com.example.galleryapp.ui.theme.SubtextGray
+import com.example.galleryapp.ui.theme.SurfaceLight
 
-private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
-private val warningGradient = listOf(Color(0xFFF59E0B), Color(0xFFD97706))
+private val goldGradient = listOf(Color(0xFFF5B800), Color(0xFFFFD84D))
 
 @Composable
 fun SettingsScreen(
@@ -71,129 +73,133 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Box(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+            .background(SurfaceLight)
+            .statusBarsPadding(),
+        contentPadding = PaddingValues(bottom = 32.dp)
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(bottom = 32.dp),
-            modifier = Modifier.statusBarsPadding()
-        ) {
-            item {
-                SettingsTopBar(onBack = onBack)
-            }
-            item {
-                PremiumBanner(onClick = onNavigateToPremium)
-            }
-            item {
-                SettingsGroupLabel(stringResource(R.string.privacy_security))
-                SettingsToggleRow(
+        item { SettingsTopBar(onBack = onBack) }
+        item { PremiumBanner(onClick = onNavigateToPremium) }
+
+        item {
+            SettingsGroupLabel(stringResource(R.string.privacy_security).uppercase())
+        }
+        item {
+            SettingsCard {
+                SettingsNavRow(
                     icon = Icons.Default.Lock,
-                    iconGradient = primaryGradient,
-                    label = stringResource(R.string.vault_title),
-                    subtitle = "Active",
-                    checked = true,
-                    onToggle = { onNavigateToVault() }
+                    iconColor = Color(0xFF4B7BF5),
+                    label = stringResource(R.string.private_vault),
+                    subtitle = stringResource(R.string.private_vault_sub),
+                    value = stringResource(R.string.active),
+                    showChevron = false,
+                    onClick = onNavigateToVault
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsToggleRow(
                     icon = Icons.Default.Security,
-                    iconGradient = primaryGradient,
+                    iconColor = Color(0xFF6E7BF5),
                     label = stringResource(R.string.app_lock),
-                    subtitle = null,
+                    subtitle = stringResource(R.string.fingerprint_face_pin),
                     checked = uiState.appLockEnabled,
-                    onToggle = {
-                        if (!uiState.appLockEnabled) onNavigateToAppLock() else viewModel.toggleAppLock()
-                    }
+                    onToggle = { if (!uiState.appLockEnabled) onNavigateToAppLock() else viewModel.toggleAppLock() }
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsToggleRow(
-                    icon = Icons.Default.Security,
-                    iconGradient = listOf(Color(0xFF6B7280), Color(0xFF4B5563)),
+                    icon = Icons.Default.VisibilityOff,
+                    iconColor = Color(0xFF4B9E5F),
+                    label = stringResource(R.string.hide_app_icon),
+                    subtitle = stringResource(R.string.hide_app_icon_sub),
+                    checked = false,
+                    onToggle = {}
+                )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
+                SettingsToggleRow(
+                    icon = Icons.Default.Image,
+                    iconColor = Color(0xFFE0534A),
                     label = stringResource(R.string.strip_metadata),
                     subtitle = null,
                     checked = uiState.stripMetadata,
                     onToggle = viewModel::toggleStripMetadata
                 )
             }
-            item {
-                SettingsGroupLabel(stringResource(R.string.storage))
+        }
+
+        item { SettingsGroupLabel(stringResource(R.string.storage).uppercase()) }
+        item {
+            SettingsCard {
                 SettingsNavRow(
                     icon = Icons.Default.Storage,
-                    iconGradient = listOf(Color(0xFFF59E0B), Color(0xFFD97706)),
-                    label = stringResource(R.string.storage_manager_title),
+                    iconColor = Color(0xFFF59E0B),
+                    label = stringResource(R.string.smart_cleaner),
+                    subtitle = stringResource(R.string.smart_cleaner_sub, "9.2"),
                     value = uiState.storageLabel,
-                    onClick = onNavigateToStorage
+                    showChevron = false,
+                    onClick = onNavigateToCleaner
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsNavRow(
                     icon = Icons.Default.Delete,
-                    iconGradient = listOf(Color(0xFF6B7280), Color(0xFF4B5563)),
+                    iconColor = Color(0xFF8A8FA0),
                     label = stringResource(R.string.recently_deleted),
-                    value = uiState.trashLabel,
+                    subtitle = stringResource(R.string.recently_deleted_sub, 12, 30),
+                    value = "",
+                    showChevron = true,
                     onClick = onNavigateToTrash
                 )
-                SettingsNavRow(
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
+                SettingsToggleRow(
                     icon = Icons.Default.CloudUpload,
-                    iconGradient = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6)),
-                    label = stringResource(R.string.backup_title),
-                    value = if (uiState.cloudBackup) stringResource(R.string.backup_on) else stringResource(R.string.backup_off),
-                    onClick = onNavigateToBackup
+                    iconColor = Color(0xFF4B7BF5),
+                    label = stringResource(R.string.cloud_backup),
+                    subtitle = stringResource(R.string.cloud_backup_sub),
+                    checked = uiState.cloudBackup,
+                    onToggle = onNavigateToBackup
                 )
             }
-            item {
-                SettingsGroupLabel(stringResource(R.string.display))
+        }
+
+        item { SettingsGroupLabel(stringResource(R.string.display).uppercase()) }
+        item {
+            SettingsCard {
                 SettingsNavRow(
                     icon = Icons.Default.ModeNight,
-                    iconGradient = listOf(Color(0xFF8B5CF6), Color(0xFF6366F1)),
+                    iconColor = Color(0xFF5B4B9E),
                     label = stringResource(R.string.dark_mode),
+                    subtitle = null,
                     value = uiState.darkMode,
+                    showChevron = false,
                     onClick = {}
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsNavRow(
                     icon = Icons.Default.GridView,
-                    iconGradient = primaryGradient,
+                    iconColor = BrandBlue,
                     label = stringResource(R.string.default_grid),
+                    subtitle = null,
                     value = uiState.defaultGrid,
+                    showChevron = false,
                     onClick = {}
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsToggleRow(
                     icon = Icons.Default.GridView,
-                    iconGradient = listOf(Color(0xFF6B7280), Color(0xFF4B5563)),
+                    iconColor = Color(0xFFE0534A),
                     label = stringResource(R.string.show_video_duration),
                     subtitle = null,
                     checked = uiState.showVideoDuration,
                     onToggle = viewModel::toggleShowVideoDuration
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsToggleRow(
-                    icon = Icons.Default.GridView,
-                    iconGradient = listOf(Color(0xFF6B7280), Color(0xFF4B5563)),
+                    icon = Icons.Default.Image,
+                    iconColor = Color(0xFF4B9E5F),
                     label = stringResource(R.string.rounded_thumbnails),
                     subtitle = null,
                     checked = uiState.roundedThumbnails,
                     onToggle = viewModel::toggleRoundedThumbnails
-                )
-            }
-            item {
-                SettingsGroupLabel(stringResource(R.string.about))
-                SettingsNavRow(
-                    icon = Icons.Default.Star,
-                    iconGradient = warningGradient,
-                    label = stringResource(R.string.version),
-                    value = "2.5.14",
-                    onClick = {}
-                )
-                SettingsNavRow(
-                    icon = Icons.Default.Star,
-                    iconGradient = primaryGradient,
-                    label = stringResource(R.string.whats_new),
-                    value = "",
-                    onClick = {}
-                )
-                SettingsNavRow(
-                    icon = Icons.Default.Star,
-                    iconGradient = warningGradient,
-                    label = stringResource(R.string.rate_app),
-                    value = "",
-                    onClick = {}
                 )
             }
         }
@@ -205,15 +211,20 @@ private fun SettingsTopBar(onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .background(Color.White)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onBack) {
-            Icon(Icons.Default.ArrowBack, contentDescription = stringResource(R.string.back), tint = Color.White)
+            Icon(
+                imageVector = Icons.Default.ArrowBack,
+                contentDescription = stringResource(R.string.back),
+                tint = OnSurfaceDark
+            )
         }
         Text(
             text = stringResource(R.string.settings_title),
-            color = Color.White,
+            color = OnSurfaceDark,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.weight(1f)
@@ -226,9 +237,9 @@ private fun PremiumBanner(onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(horizontal = 16.dp, vertical = 10.dp)
             .clip(RoundedCornerShape(16.dp))
-            .background(Brush.linearGradient(warningGradient))
+            .background(Brush.linearGradient(goldGradient))
             .clickable(onClick = onClick)
             .padding(16.dp)
     ) {
@@ -239,15 +250,30 @@ private fun PremiumBanner(onClick: () -> Unit) {
                 tint = Color.White,
                 modifier = Modifier.size(28.dp)
             )
-            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(stringResource(R.string.get_premium), color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                Text(stringResource(R.string.unlock_ai), color = Color.White.copy(alpha = 0.87f), fontSize = 12.sp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 12.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.get_premium),
+                    color = Color.White,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.unlock_ai),
+                    color = Color.White.copy(alpha = 0.9f),
+                    fontSize = 12.sp
+                )
             }
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(20.dp).semantics { role = Role.Image }
+                modifier = Modifier
+                    .size(20.dp)
+                    .semantics { role = Role.Image }
             )
         }
     }
@@ -257,18 +283,31 @@ private fun PremiumBanner(onClick: () -> Unit) {
 private fun SettingsGroupLabel(label: String) {
     Text(
         text = label,
-        color = Color(0xFF8B5CF6),
+        color = SectionLabelGray,
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.5.sp,
-        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 4.dp)
+        letterSpacing = 0.8.sp,
+        modifier = Modifier.padding(start = 16.dp, top = 20.dp, bottom = 6.dp)
     )
+}
+
+@Composable
+private fun SettingsCard(content: @Composable () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clip(RoundedCornerShape(14.dp))
+            .background(Color.White)
+    ) {
+        content()
+    }
 }
 
 @Composable
 private fun SettingsToggleRow(
     icon: ImageVector,
-    iconGradient: List<Color>,
+    iconColor: Color,
     label: String,
     subtitle: String?,
     checked: Boolean,
@@ -278,14 +317,18 @@ private fun SettingsToggleRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onToggle)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SettingIcon(icon = icon, gradient = iconGradient)
-        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-            Text(label, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+        SettingIcon(icon = icon, color = iconColor)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp)
+        ) {
+            Text(label, color = OnSurfaceDark, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             if (subtitle != null) {
-                Text(subtitle, color = Color.White.copy(alpha = 0.87f), fontSize = 12.sp)
+                Text(subtitle, color = SubtextGray, fontSize = 12.sp)
             }
         }
         Switch(
@@ -293,9 +336,9 @@ private fun SettingsToggleRow(
             onCheckedChange = { onToggle() },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF6366F1),
+                checkedTrackColor = BrandBlue,
                 uncheckedThumbColor = Color.White,
-                uncheckedTrackColor = Color.White.copy(alpha = 0.2f)
+                uncheckedTrackColor = Color(0xFFCCCCCC)
             )
         )
     }
@@ -304,47 +347,63 @@ private fun SettingsToggleRow(
 @Composable
 private fun SettingsNavRow(
     icon: ImageVector,
-    iconGradient: List<Color>,
+    iconColor: Color,
     label: String,
+    subtitle: String?,
     value: String,
+    showChevron: Boolean,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SettingIcon(icon = icon, gradient = iconGradient)
-        Text(
-            text = label,
-            color = Color.White,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = Modifier.weight(1f).padding(start = 12.dp)
-        )
-        if (value.isNotEmpty()) {
-            Text(value, color = Color.White.copy(alpha = 0.87f), fontSize = 13.sp)
+        SettingIcon(icon = icon, color = iconColor)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 12.dp)
+        ) {
+            Text(label, color = OnSurfaceDark, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            if (subtitle != null) {
+                Text(subtitle, color = SubtextGray, fontSize = 12.sp)
+            }
         }
-        Icon(
-            imageVector = Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = Color.White,
-            modifier = Modifier.size(18.dp).semantics { role = Role.Image }
-        )
+        if (value.isNotEmpty()) {
+            Text(value, color = SubtextGray, fontSize = 13.sp)
+        }
+        if (showChevron) {
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = SubtextGray,
+                modifier = Modifier
+                    .size(18.dp)
+                    .semantics { role = Role.Image }
+            )
+        }
     }
 }
 
 @Composable
-private fun SettingIcon(icon: ImageVector, gradient: List<Color>) {
+private fun SettingIcon(icon: ImageVector, color: Color) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(36.dp)
             .clip(RoundedCornerShape(9.dp))
-            .background(Brush.linearGradient(gradient))
+            .background(color)
     ) {
-        Icon(icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp).semantics { role = Role.Image })
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier
+                .size(18.dp)
+                .semantics { role = Role.Image }
+        )
     }
 }

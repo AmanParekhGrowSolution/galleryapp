@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.Place
@@ -45,16 +46,17 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
-
-private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-private val accentGradient = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6))
+import com.example.galleryapp.ui.theme.BrandBlue
+import com.example.galleryapp.ui.theme.OnSurfaceDark
+import com.example.galleryapp.ui.theme.SectionLabelGray
+import com.example.galleryapp.ui.theme.SubtextGray
 
 private val peopleSamples = listOf("You", "Sara", "Arjun", "Mom", "+ Tag")
-private val thingsSamples = listOf("Landscapes", "Clouds", "Food", "Coasts", "Pets", "Cars", "Tips")
-private val placesSamples = listOf("Mumbai 247", "Goa 64", "Rajasthan 38", "Kolkata 21")
-private val recentSearches = listOf("Sunset goa", "Mom birthday", "Receipts march")
+private val thingsSamples = listOf("Beach", "Food", "Selfies", "Documents", "Sunset", "Pets")
+private val placesSamples = listOf("Mumbai" to "247 photos", "Goa" to "64 photos", "Bengaluru" to "38 photos")
 private val thingColors = listOf(
-    0xFF1F4D5CL, 0xFF2D5A27L, 0xFF5C3D1FL, 0xFF1E3A5FL, 0xFF5C2A1FL, 0xFF3D1F5CL, 0xFF1F3B3BL
+    Color(0xFF2D6A4F), Color(0xFFD4875E), Color(0xFF5E72A8),
+    Color(0xFF7B4F9E), Color(0xFFB85C55), Color(0xFF3D7A6E)
 )
 
 @Composable
@@ -68,53 +70,56 @@ fun SearchScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+            .background(Color.White)
     ) {
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
             item(span = { GridItemSpan(maxLineSpan) }) {
-                SearchBar(query = query, onQueryChange = viewModel::onQueryChange)
+                SearchBarRow(query = query, onQueryChange = viewModel::onQueryChange)
             }
 
             when (val state = uiState) {
                 is SearchUiState.Empty -> {
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        AIHintCard()
+                        AIHintRow()
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        PeopleSection()
+                        PeopleSectionHeader()
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        ThingsLabel()
+                        PeopleRow()
                     }
-                    items(thingsSamples.zip(thingColors)) { (name, color) ->
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        SectionHeader(label = stringResource(R.string.things))
+                    }
+                    items(thingsSamples.zip(thingColors), key = { it.first }) { (name, color) ->
                         ThingTile(name = name, color = color)
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        PlacesSection()
+                        PlacesSectionHeader()
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
-                        RecentSearchesSection()
+                        PlacesList()
                     }
                 }
                 is SearchUiState.Results -> {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Text(
                             text = "${state.photos.size} results",
-                            color = Color.White.copy(alpha = 0.87f),
+                            color = SubtextGray,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
-                    items(state.photos) { photo ->
+                    items(state.photos, key = { it.id }) { photo ->
                         Box(
                             modifier = Modifier
                                 .aspectRatio(1f)
                                 .padding(1.dp)
                                 .clip(RoundedCornerShape(2.dp))
-                                .background(Brush.linearGradient(listOf(Color(photo.placeholderColor), Color(photo.placeholderColor).copy(alpha = 0.85f))))
+                                .background(Color(photo.placeholderColor))
                                 .clickable { onPhotoClick(photo.id) }
                         )
                     }
@@ -125,40 +130,45 @@ fun SearchScreen(
 }
 
 @Composable
-private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
-    Box(
+private fun SearchBarRow(query: String, onQueryChange: (String) -> Unit) {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp)
-            .clip(RoundedCornerShape(21.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(Color.White.copy(alpha = 0.12f), Color.White.copy(alpha = 0.08f))
-                )
-            )
+            .background(Color.White)
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        contentAlignment = Alignment.CenterStart
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(24.dp))
+                .background(Color(0xFFF0F1F5))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = stringResource(R.string.content_desc_search),
-                tint = Color.White,
+                tint = SubtextGray,
                 modifier = Modifier.size(20.dp)
             )
-            Box(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 10.dp)
+            ) {
                 if (query.isEmpty()) {
                     Text(
-                        text = stringResource(R.string.search_hint),
-                        color = Color.White.copy(alpha = 0.87f),
+                        text = stringResource(R.string.search_hint_full),
+                        color = SubtextGray,
                         fontSize = 15.sp
                     )
                 }
                 BasicTextField(
                     value = query,
                     onValueChange = onQueryChange,
-                    textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
-                    cursorBrush = SolidColor(Color(0xFF8B5CF6)),
+                    textStyle = TextStyle(color = OnSurfaceDark, fontSize = 15.sp),
+                    cursorBrush = SolidColor(BrandBlue),
                     singleLine = true
                 )
             }
@@ -166,7 +176,7 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(R.string.close),
-                    tint = Color.White,
+                    tint = SubtextGray,
                     modifier = Modifier
                         .size(18.dp)
                         .clickable { onQueryChange("") }
@@ -177,185 +187,198 @@ private fun SearchBar(query: String, onQueryChange: (String) -> Unit) {
 }
 
 @Composable
-private fun AIHintCard() {
-    Box(
+private fun AIHintRow() {
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(Brush.linearGradient(accentGradient))
-            .padding(16.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF0F1F5))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(BrandBlue.copy(alpha = 0.12f))
+        ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(32.dp)
+                tint = BrandBlue,
+                modifier = Modifier.size(18.dp)
             )
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(
-                    text = stringResource(R.string.browse_offline),
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = stringResource(R.string.browse_offline_hint),
-                    color = Color.White.copy(alpha = 0.87f),
-                    fontSize = 12.sp
-                )
-            }
+        }
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(
+                text = stringResource(R.string.search_ai_label),
+                color = OnSurfaceDark,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.search_ai_subtitle),
+                color = SubtextGray,
+                fontSize = 12.sp
+            )
         }
     }
 }
 
 @Composable
-private fun PeopleSection() {
-    Column(modifier = Modifier.padding(top = 16.dp)) {
-        Text(
-            text = stringResource(R.string.people),
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            peopleSamples.forEach { name ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(CircleShape)
-                            .background(
-                                Brush.linearGradient(
-                                    listOf(Color(0xFF6366F1).copy(alpha = 0.4f), Color(0xFF8B5CF6).copy(alpha = 0.4f))
-                                )
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Face,
-                            contentDescription = name,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(name, color = Color.White.copy(alpha = 0.87f), fontSize = 11.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThingsLabel() {
+private fun SectionHeader(label: String) {
     Text(
-        text = stringResource(R.string.things),
-        color = Color.White,
+        text = label,
+        color = OnSurfaceDark,
         fontSize = 16.sp,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 4.dp)
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp)
     )
 }
 
 @Composable
-private fun ThingTile(name: String, color: Long) {
+private fun PeopleSectionHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.people),
+            color = OnSurfaceDark,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = stringResource(R.string.see_all),
+            color = BrandBlue,
+            fontSize = 13.sp
+        )
+    }
+}
+
+@Composable
+private fun PeopleRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        peopleSamples.forEach { name ->
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(60.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFE8EBF5))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Face,
+                        contentDescription = name,
+                        tint = SubtextGray,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(name, color = SubtextGray, fontSize = 11.sp)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThingTile(name: String, color: Color) {
     Box(
         contentAlignment = Alignment.BottomStart,
         modifier = Modifier
             .aspectRatio(1f)
             .padding(4.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Brush.linearGradient(listOf(Color(color), Color(color).copy(alpha = 0.8f))))
+            .background(color)
+            .clickable {}
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(listOf(Color.Transparent, Color(0xCC000000)))
-                )
+                .background(Brush.verticalGradient(listOf(Color.Transparent, Color(0x99000000))))
         )
         Text(
             text = name,
             color = Color.White,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(8.dp)
         )
     }
 }
 
 @Composable
-private fun PlacesSection() {
-    Column(modifier = Modifier.padding(top = 16.dp)) {
+private fun PlacesSectionHeader() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(
             text = stringResource(R.string.places),
-            color = Color.White,
+            color = OnSurfaceDark,
             fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            fontWeight = FontWeight.Bold
         )
-        placesSamples.forEach { place ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {}
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Place,
-                    contentDescription = stringResource(R.string.content_desc_place_pin),
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-                Text(
-                    text = place,
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 12.dp)
-                )
-            }
-        }
+        Text(
+            text = stringResource(R.string.map_link),
+            color = BrandBlue,
+            fontSize = 13.sp
+        )
     }
 }
 
 @Composable
-private fun RecentSearchesSection() {
-    Column(modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)) {
-        Text(
-            text = "Recent searches",
-            color = Color.White,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-        )
-        recentSearches.forEach { search ->
+private fun PlacesList() {
+    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+        placesSamples.forEach { (city, count) ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {}
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                    .padding(vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color(0xFFE8EBF5))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Place,
+                        contentDescription = stringResource(R.string.content_desc_place_pin),
+                        tint = BrandBlue,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 12.dp)
+                ) {
+                    Text(city, color = OnSurfaceDark, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                    Text(count, color = SubtextGray, fontSize = 12.sp)
+                }
                 Icon(
-                    imageVector = Icons.Default.Search,
+                    imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = search,
-                    color = Color.White.copy(alpha = 0.87f),
-                    fontSize = 14.sp,
-                    modifier = Modifier.padding(start = 12.dp)
+                    tint = SubtextGray,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

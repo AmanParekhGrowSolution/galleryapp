@@ -1,33 +1,34 @@
 package com.example.galleryapp.ui.navigation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -44,10 +45,8 @@ import com.example.galleryapp.ui.albums.AlbumsScreen
 import com.example.galleryapp.ui.home.HomeScreen
 import com.example.galleryapp.ui.moments.MomentsScreen
 import com.example.galleryapp.ui.search.SearchScreen
-
-private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
-private val navBgGradient = listOf(Color(0xFF0F0C29), Color(0xFF24243E))
+import com.example.galleryapp.ui.theme.BrandBlue
+import com.example.galleryapp.ui.theme.SubtextGray
 
 private data class TabItem(
     val route: String,
@@ -81,7 +80,7 @@ fun MainScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+            .background(Color.White)
     ) {
         NavHost(
             navController = innerNav,
@@ -90,7 +89,7 @@ fun MainScreen(
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(bottom = 84.dp)
+                .padding(bottom = 64.dp)
         ) {
             composable(Screen.Home) {
                 HomeScreen(onPhotoClick = onNavigateToPhotoViewer)
@@ -136,57 +135,61 @@ private fun BottomNavBar(
     onTabSelected: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    Column(
         modifier = modifier
             .fillMaxWidth()
+            .background(Color.White)
             .windowInsetsPadding(WindowInsets.navigationBars)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        contentAlignment = Alignment.Center
     ) {
+        HorizontalDivider(color = Color(0xFFEEEEEE), thickness = 0.5.dp)
         Row(
             modifier = Modifier
-                .background(
-                    Brush.linearGradient(navBgGradient),
-                    RoundedCornerShape(999.dp)
-                )
-                .border(1.dp, Color.White.copy(alpha = 0.12f), RoundedCornerShape(999.dp))
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                .fillMaxWidth()
+                .height(64.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
             tabs.forEach { tab ->
                 val selected = currentRoute == tab.route
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .then(
-                            if (selected)
-                                Modifier.background(Brush.linearGradient(primaryGradient), RoundedCornerShape(999.dp))
-                            else
-                                Modifier
-                        )
-                        .clickable { onTabSelected(tab.route) }
-                        .padding(horizontal = if (selected) 16.dp else 14.dp, vertical = 10.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = tab.icon,
-                            contentDescription = stringResource(tab.labelRes),
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        if (selected) {
-                            Text(
-                                text = stringResource(tab.labelRes),
-                                color = Color.White,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                modifier = Modifier.padding(start = 6.dp)
-                            )
-                        }
-                    }
-                }
+                NavTabItem(
+                    icon = tab.icon,
+                    label = stringResource(tab.labelRes),
+                    selected = selected,
+                    onClick = { onTabSelected(tab.route) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun NavTabItem(
+    icon: ImageVector,
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (selected) BrandBlue else SubtextGray,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            color = if (selected) BrandBlue else SubtextGray,
+            fontSize = 11.sp,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+        )
     }
 }

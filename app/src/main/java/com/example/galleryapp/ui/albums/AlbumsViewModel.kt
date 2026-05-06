@@ -1,6 +1,7 @@
 package com.example.galleryapp.ui.albums
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.galleryapp.data.repository.GalleryRepositoryImpl
 import com.example.galleryapp.domain.model.Album
@@ -24,8 +25,8 @@ sealed interface AlbumsUiState {
     data class Error(val message: String) : AlbumsUiState
 }
 
-class AlbumsViewModel : ViewModel() {
-    private val repository = GalleryRepositoryImpl()
+class AlbumsViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = GalleryRepositoryImpl(application)
     private val _uiState = MutableStateFlow<AlbumsUiState>(AlbumsUiState.Loading)
     val uiState: StateFlow<AlbumsUiState> = _uiState.asStateFlow()
 
@@ -36,11 +37,15 @@ class AlbumsViewModel : ViewModel() {
     private fun loadAlbums() {
         viewModelScope.launch {
             repository.getAlbums().collect { albums ->
+                val featured = albums.filter { it.type == AlbumType.Featured }
+                val myAlbums = albums.filter { it.type == AlbumType.User }
+                val social = albums.filter { it.type == AlbumType.Social }
+
                 _uiState.update {
                     AlbumsUiState.Success(
-                        featured = albums.filter { it.type == AlbumType.Featured },
-                        myAlbums = albums.filter { it.type == AlbumType.User },
-                        social = albums.filter { it.type == AlbumType.Social },
+                        featured = featured,
+                        myAlbums = myAlbums,
+                        social = social,
                         places = listOf(
                             AlbumPlace("Mumbai", 247, 0xFF1E3A5FL),
                             AlbumPlace("Goa", 64, 0xFF1F4D5CL),

@@ -9,5 +9,7 @@ data class Photo(
     val placeholderColor: Long,
     val width: Int = 0,
     val height: Int = 0,
-    val isFavorite: Boolean = false
+    val isFavorite: Boolean = false,
+    val uri: String? = null,
+    val duration: Long = 0L
 )

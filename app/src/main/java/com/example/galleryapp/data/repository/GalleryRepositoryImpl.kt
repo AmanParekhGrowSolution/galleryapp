@@ -1,14 +1,26 @@
 package com.example.galleryapp.data.repository
 
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.MediaStore
+import androidx.core.content.ContextCompat
+import com.example.galleryapp.data.local.MediaStoreDataSource
 import com.example.galleryapp.domain.model.Album
 import com.example.galleryapp.domain.model.AlbumType
 import com.example.galleryapp.domain.model.CleanerCategory
 import com.example.galleryapp.domain.model.Photo
 import com.example.galleryapp.domain.repository.GalleryRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 
-class GalleryRepositoryImpl : GalleryRepository {
+class GalleryRepositoryImpl(private val context: Context? = null) : GalleryRepository {
+
+    private val mediaStore: MediaStoreDataSource? =
+        context?.let { MediaStoreDataSource(it) }
+
+    // ── Sample data fallback ──────────────────────────────────────────────────
 
     private val sampleColors = listOf(
         0xFF1E3A5FL, 0xFF2D5A27L, 0xFF5C1F1FL, 0xFF3D1F5CL,
@@ -26,7 +38,7 @@ class GalleryRepositoryImpl : GalleryRepository {
             displayName = "IMG_${2024000 + id}.jpg",
             dateTaken = System.currentTimeMillis() - (id * 3_600_000L),
             size = 2_500_000L + (id * 100_000L),
-            mimeType = "image/jpeg",
+            mimeType = if (id % 5L == 0L) "video/mp4" else if (id % 8L == 0L) "image/gif" else "image/jpeg",
             placeholderColor = sampleColors[colorIndex],
             width = 4032,
             height = 3024,
@@ -70,13 +82,46 @@ class GalleryRepositoryImpl : GalleryRepository {
         CleanerCategory("WhatsApp media", 1241, 2_516_582_400L, 0xFF25D366L),
     )
 
-    override fun getPhotos(): Flow<List<Photo>> = flowOf(samplePhotos)
+    // ── Permission check ──────────────────────────────────────────────────────
 
-    override fun getAlbums(): Flow<List<Album>> = flowOf(sampleAlbums)
+    private fun hasMediaPermission(): Boolean {
+        val ctx = context ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_MEDIA_IMAGES) ==
+                    PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_MEDIA_VIDEO) ==
+                    PackageManager.PERMISSION_GRANTED
+        } else {
+            ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.READ_EXTERNAL_STORAGE) ==
+                    PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    // ── Repository interface ──────────────────────────────────────────────────
+
+    override fun getPhotos(): Flow<List<Photo>> = flow {
+        if (mediaStore != null && hasMediaPermission()) {
+            emit(mediaStore.queryPhotosAndVideos())
+        } else {
+            emit(samplePhotos)
+        }
+    }
+
+    override fun getAlbums(): Flow<List<Album>> = flow {
+        if (mediaStore != null && hasMediaPermission()) {
+            val realAlbums = mediaStore.queryAlbums()
+            emit(realAlbums.ifEmpty { sampleAlbums })
+        } else {
+            emit(sampleAlbums)
+        }
+    }
 
     override fun getVaultPhotos(): Flow<List<Photo>> = flowOf(vaultPhotos)
 
     override fun getCleanerCategories(): List<CleanerCategory> = cleanerCategories
 
-    override fun getPhotoById(id: Long): Photo? = samplePhotos.find { it.id == id }
+    override fun getPhotoById(id: Long): Photo? {
+        // Check sample photos; real data would need a suspend function but kept sync for compat
+        return samplePhotos.find { it.id == id }
+    }
 }

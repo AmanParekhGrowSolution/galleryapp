@@ -93,7 +93,7 @@ jobs:
           #   - release download assets (gh release upload)
           #   - raw.githubusercontent.com refs
           printf '%s' "$ISSUE_BODY" \
-            | grep -oE 'https://github\.com/user-attachments/(files|assets)/[^ )"<>\n]+|https://github\.com/[^/]+/[^/]+/releases/download/[^ )"<>\n]+|https://raw\.githubusercontent\.com/[^ )"<>\n]+' \
+            | grep -oE 'https://github\.com/user-attachments/(files|assets)/[^ )"<>]+|https://github\.com/[^/]+/[^/]+/releases/download/[^ )"<>]+|https://raw\.githubusercontent\.com/[^ )"<>]+' \
             > /tmp/attachment-urls.txt || true
 
           if [ ! -s /tmp/attachment-urls.txt ]; then
@@ -101,6 +101,7 @@ jobs:
             echo "No attachments found in issue body."
           else
             echo "::group::Issue attachments"
+            : > "$MANIFEST"
             while IFS= read -r URL; do
               BASENAME=$(basename "$URL" | sed 's/[?#].*//')
               DEST="/tmp/issue-attachments/$BASENAME"

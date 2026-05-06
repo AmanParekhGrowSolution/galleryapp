@@ -25,6 +25,22 @@ object Screen {
     const val Slideshow = "slideshow"
     const val AppLockSetup = "app_lock_setup"
 
+    // Wave 2 — overlays, dialogs, sheets
+    const val MultiSelect = "multi_select"
+    const val MoveToAlbum = "move_to_album"
+    const val CreateAlbum = "create_album"
+    const val DeleteConfirm = "delete_confirm"
+    const val ShareSheet = "share_sheet"
+    const val SortFilter = "sort_filter"
+    const val PhotoInfo = "photo_info"
+    const val Rename = "rename"
+    const val SetAs = "set_as"
+    const val SlideshowSettings = "slideshow_settings"
+    const val CleanerRunning = "cleaner_running"
+    const val CleanerResult = "cleaner_result"
+    const val MapPlaceSheet = "map_place_sheet"
+    const val PremiumNudge = "premium_nudge"
+
     fun photoViewer(photoId: Long) = "photo_viewer/$photoId"
     fun aiEditor(photoId: Long) = "ai_editor/$photoId"
     fun videoPlayer(photoId: Long) = "video_player/$photoId"

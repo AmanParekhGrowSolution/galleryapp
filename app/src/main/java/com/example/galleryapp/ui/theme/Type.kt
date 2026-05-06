@@ -15,120 +15,123 @@ private val fontProvider = GoogleFont.Provider(
     certificates = R.array.com_google_android_gms_fonts_certs
 )
 
-// Arimo is an open-source font metric-compatible with Helvetica/Arial
-private val arimoFont = GoogleFont("Arimo")
+private val interFont = GoogleFont("Inter")
 
-val HelveticaFontFamily = FontFamily(
-    Font(googleFont = arimoFont, fontProvider = fontProvider, weight = FontWeight.Normal),
-    Font(googleFont = arimoFont, fontProvider = fontProvider, weight = FontWeight.Medium),
-    Font(googleFont = arimoFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
-    Font(googleFont = arimoFont, fontProvider = fontProvider, weight = FontWeight.Bold),
+val InterFontFamily = FontFamily(
+    Font(googleFont = interFont, fontProvider = fontProvider, weight = FontWeight.Normal),
+    Font(googleFont = interFont, fontProvider = fontProvider, weight = FontWeight.Medium),
+    Font(googleFont = interFont, fontProvider = fontProvider, weight = FontWeight.SemiBold),
+    Font(googleFont = interFont, fontProvider = fontProvider, weight = FontWeight.Bold),
+    Font(googleFont = interFont, fontProvider = fontProvider, weight = FontWeight.ExtraBold),
 )
+
+// Keep alias so existing screens referencing HelveticaFontFamily still compile
+val HelveticaFontFamily = InterFontFamily
 
 val Typography = Typography(
     bodyLarge = TextStyle(
-        fontFamily = HelveticaFontFamily,
+        fontFamily = InterFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 16.sp,
         lineHeight = 24.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.sp
     ),
     bodyMedium = TextStyle(
-        fontFamily = HelveticaFontFamily,
+        fontFamily = InterFontFamily,
         fontWeight = FontWeight.Normal,
         fontSize = 14.sp,
         lineHeight = 20.sp,
-        letterSpacing = 0.25.sp
+        letterSpacing = 0.sp
     ),
     bodySmall = TextStyle(
-        fontFamily = HelveticaFontFamily,
+        fontFamily = InterFontFamily,
         fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp,
+        letterSpacing = 0.sp
+    ),
+    titleLarge = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.3).sp
+    ),
+    titleMedium = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 17.sp,
+        lineHeight = 24.sp,
+        letterSpacing = (-0.2).sp
+    ),
+    titleSmall = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    ),
+    labelLarge = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.sp
+    ),
+    labelMedium = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.Bold,
         fontSize = 12.sp,
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp
     ),
-    titleLarge = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.SemiBold,
-        fontSize = 22.sp,
-        lineHeight = 28.sp,
-        letterSpacing = 0.sp
-    ),
-    titleMedium = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 16.sp,
-        lineHeight = 24.sp,
-        letterSpacing = 0.15.sp
-    ),
-    titleSmall = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
-    ),
-    labelLarge = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 14.sp,
-        lineHeight = 20.sp,
-        letterSpacing = 0.1.sp
-    ),
-    labelMedium = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 12.sp,
-        lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
-    ),
     labelSmall = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 10.5.sp,
         lineHeight = 16.sp,
-        letterSpacing = 0.5.sp
+        letterSpacing = 0.sp
     ),
     headlineLarge = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 32.sp,
-        lineHeight = 40.sp,
-        letterSpacing = 0.sp
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 28.sp,
+        lineHeight = 34.sp,
+        letterSpacing = (-0.4).sp
     ),
     headlineMedium = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 28.sp,
-        lineHeight = 36.sp,
-        letterSpacing = 0.sp
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 22.sp,
+        lineHeight = 28.sp,
+        letterSpacing = (-0.3).sp
     ),
     headlineSmall = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 24.sp,
-        lineHeight = 32.sp,
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+        lineHeight = 24.sp,
         letterSpacing = 0.sp
     ),
     displayLarge = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 57.sp,
-        lineHeight = 64.sp,
-        letterSpacing = (-0.25).sp
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 44.sp,
+        lineHeight = 52.sp,
+        letterSpacing = (-0.5).sp
     ),
     displayMedium = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Normal,
-        fontSize = 45.sp,
-        lineHeight = 52.sp,
-        letterSpacing = 0.sp
-    ),
-    displaySmall = TextStyle(
-        fontFamily = HelveticaFontFamily,
-        fontWeight = FontWeight.Normal,
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 36.sp,
         lineHeight = 44.sp,
-        letterSpacing = 0.sp
+        letterSpacing = (-0.4).sp
+    ),
+    displaySmall = TextStyle(
+        fontFamily = InterFontFamily,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        lineHeight = 36.sp,
+        letterSpacing = (-0.3).sp
     ),
 )

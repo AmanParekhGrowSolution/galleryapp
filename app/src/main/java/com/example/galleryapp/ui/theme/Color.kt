@@ -3,37 +3,54 @@ package com.example.galleryapp.ui.theme
 import androidx.compose.ui.graphics.Color
 
 // ── Brand ────────────────────────────────────────────────────────────────────
-val BrandBlue = Color(0xFF1A6BFF)
+val BrandBlue = Color(0xFF0066FF)
 val BrandBlueDark = Color(0xFF0040AA)
-val TryFreeGold = Color(0xFFF5B800)
-val TryFreeGoldLight = Color(0xFFFFD84D)
+val BrandBlueSoft = Color(0x1F0066FF)       // rgba(0,102,255,0.12)
+val BrandBlueTint = Color(0xFFE8F0FF)       // --bg-light-3 tint
+val BrandBlueDeep = Color(0xFF0040AA)
+val BrandPurple = Color(0xFFA78BFA)
+
+// ── Premium ────────────────────────────────────────────────────────────────────
+val TryFreeGold = Color(0xFFFF9700)          // --premium-orange
+val TryFreeGoldLight = Color(0xFFFFDC00)     // --premium-yellow
+val PremiumAmber = Color(0xFFF7AC16)         // --premium-amber
+val PremiumBrown = Color(0xFF984000)         // --premium-brown
+val PremiumBrownDark = Color(0xFF5C2700)
+val PremiumCream = Color(0xFFFFF8EE)
 
 // ── Light-theme surfaces ──────────────────────────────────────────────────────
-val SurfaceLight = Color(0xFFF5F6FA)
+val SurfaceLight = Color(0xFFFFFFFF)         // --bg-light
 val SurfaceCard = Color(0xFFFFFFFF)
-val DividerLight = Color(0xFFEEEEEE)
+val BgLight2 = Color(0xFFF9F9FA)             // --bg-light-2
+val BgLight3 = Color(0xFFEBF2F8)             // --bg-light-3
+val DividerLight = Color(0xFFBFD4E4)         // --border-light
+val BorderLightSoft = Color(0xFFE8EFF6)
 
 // ── Light-theme text ──────────────────────────────────────────────────────────
-val OnSurfaceDark = Color(0xFF111111)
-val SubtextGray = Color(0xFF888888)
+val OnSurfaceDark = Color(0xFF000000)        // --fg-1
+val Fg2 = Color(0xFF2D3748)
+val SubtextGray = Color(0xFF597393)          // --fg-3
+val FgMuted = Color(0xFF7A8389)              // --fg-muted
 val SectionLabelGray = Color(0xFF8E9BAE)
 
-// ── Dark-theme surfaces (Photo Viewer, AI Editor, Video, Vault, etc.) ─────────
-val DarkBg = Color(0xFF0D0D0D)
+// ── Dark-theme surfaces ────────────────────────────────────────────────────────
+val DarkBg = Color(0xFF131111)               // --bg-dark
+val DarkBg2 = Color(0xFF1A1818)
+val DarkBg3 = Color(0xFF0A0A0A)
 val DarkBgDeep = Color(0xFF000000)
 val DarkCard = Color(0x1AFFFFFF)
 val DarkBorder = Color(0x1FFFFFFF)
 val DarkSubtext = Color(0x99FFFFFF)
 
 // ── Accent palette ────────────────────────────────────────────────────────────
-val AccentRed = Color(0xFFEF4444)
-val AccentGreen = Color(0xFF22C55E)
-val AccentGreenDark = Color(0xFF16A34A)
-val AccentPurple = Color(0xFF8B5CF6)
+val AccentRed = Color(0xFFFF0202)            // --danger
+val AccentGreen = Color(0xFF00A023)          // --success
+val AccentGreenDark = Color(0xFF10B981)
+val AccentPurple = Color(0xFFA78BFA)
 val AccentOrange = Color(0xFFF97316)
 val AccentTeal = Color(0xFF14B8A6)
-val AccentPink = Color(0xFFEC4899)
-val AccentAmber = Color(0xFFF59E0B)
+val AccentPink = Color(0xFFFF3D7F)
+val AccentAmber = Color(0xFFFBBF24)
 
 // ── Trim / video ──────────────────────────────────────────────────────────────
 val TrimYellow = Color(0xFFFFDC00)

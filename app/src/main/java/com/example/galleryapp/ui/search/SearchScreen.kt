@@ -39,6 +39,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -208,7 +211,7 @@ private fun AIHintRow() {
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
                 tint = BrandBlue,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(18.dp).semantics { role = Role.Image }
             )
         }
         Column(modifier = Modifier.padding(start = 12.dp)) {
@@ -378,7 +381,7 @@ private fun PlacesList() {
                     imageVector = Icons.Default.ChevronRight,
                     contentDescription = null,
                     tint = SubtextGray,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp).semantics { role = Role.Image }
                 )
             }
         }

@@ -50,6 +50,7 @@ fun MomentsScreen(
     onMapClick: () -> Unit,
     onPhotoClick: (Long) -> Unit,
     onStoryClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     viewModel: MomentsViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,15 +61,17 @@ fun MomentsScreen(
             .background(Color.White),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        item { MomentsTopBar() }
-        item { OnThisDayCard() }
+        item { MomentsTopBar(onSettingsClick = onSettingsClick) }
+        item { OnThisDayCard(onPhotoClick = { onPhotoClick(701L) }) }
         item { StoriesSectionHeader() }
         item { StoriesRow(stories = state.stories, onStoryClick = onStoryClick) }
+        item { PlacesSectionHeader(onMapClick = onMapClick) }
+        item { PlacesRow(onMapClick = onMapClick) }
     }
 }
 
 @Composable
-private fun MomentsTopBar() {
+private fun MomentsTopBar(onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,7 +88,7 @@ private fun MomentsTopBar() {
                 .weight(1f)
                 .padding(start = 16.dp)
         )
-        IconButton(onClick = {}) {
+        IconButton(onClick = onSettingsClick) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
                 contentDescription = stringResource(R.string.content_desc_more),
@@ -96,7 +99,7 @@ private fun MomentsTopBar() {
 }
 
 @Composable
-private fun OnThisDayCard() {
+private fun OnThisDayCard(onPhotoClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -104,7 +107,7 @@ private fun OnThisDayCard() {
             .aspectRatio(9f / 12f)
             .clip(RoundedCornerShape(20.dp))
             .background(Color(0xFF6B3FA0))
-            .clickable {}
+            .clickable(onClick = onPhotoClick)
     ) {
         Box(
             modifier = Modifier
@@ -220,6 +223,81 @@ private fun StoriesRow(stories: List<MomentStory>, onStoryClick: () -> Unit) {
                         .align(Alignment.BottomStart)
                         .padding(10.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlacesSectionHeader(onMapClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.places),
+            color = OnSurfaceDark,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = stringResource(R.string.map_link),
+            color = BrandBlue,
+            fontSize = 13.sp,
+            modifier = Modifier.clickable(onClick = onMapClick)
+        )
+    }
+}
+
+private data class PlaceItem(val name: String, val count: Int, val colorHex: Int)
+
+private val placeSamples = listOf(
+    PlaceItem("Mumbai", 247, 0xFF1E62E1.toInt()),
+    PlaceItem("Goa", 64, 0xFF059669.toInt()),
+)
+
+@Composable
+private fun PlacesRow(onMapClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        placeSamples.forEach { place ->
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(16f / 10f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color(place.colorHex))
+                    .clickable(onClick = onMapClick)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Brush.verticalGradient(darkOverlay))
+                )
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = place.name,
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.photos_label, place.count),
+                        color = Color.White.copy(alpha = 0.85f),
+                        fontSize = 11.sp
+                    )
+                }
             }
         }
     }

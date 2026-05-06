@@ -14,6 +14,9 @@ description: >
   screens, navigation, theme, and reusable components — matching the original design as
   closely as Compose allows. Works with any Claude Design export regardless of file naming,
   folder structure, or token format.
+trigger:
+  keywords: ["design bundle", ".zip", "handoff bundle", "JSX", "tokens.css", ".design-canvas", "Figma export", "claude.ai/design", "design zip"]
+  when: A ZIP file from Claude Design or a JSX/HTML/CSS design bundle is attached and needs to be converted to Kotlin Compose screens
 ---
 
 # Claude Design → Android Converter

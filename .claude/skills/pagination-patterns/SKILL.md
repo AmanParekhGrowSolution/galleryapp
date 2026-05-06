@@ -1,6 +1,9 @@
 ---
 name: pagination-patterns
 description: Pagination patterns for mobile - Paging 3 for Android (PagingSource, RemoteMediator, LazyPagingItems), cursor-based and offset-based strategies.
+trigger:
+  keywords: [pagination, paging, "infinite scroll", "Paging 3", PagingSource, RemoteMediator, LazyPagingItems, "load more", "next page", cursor, offset]
+  when: Issue involves loading a large list in pages, infinite scroll, or integrating the Paging 3 library
 ---
 
 # Pagination Patterns for Mobile

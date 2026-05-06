@@ -1,6 +1,9 @@
 ---
 name: android-admob
 description: "Implements Google AdMob monetization (App Open ads, Adaptive Banner, Interstitial, Rewarded) in any Android Kotlin + Jetpack Compose app using Koin DI. Use this skill whenever the user wants to add ads, monetize their Android app, integrate AdMob, set up Google ads, add banner ads, add interstitial ads, add app open ads, or earn revenue from their app. Also trigger when the user mentions an AdMob App ID (ca-app-pub-...), asks about ad placement strategy, wants aggressive monetization, or asks how to put ads in their Android app. Trigger even if the user only says 'add ads' or 'monetize this' — always use this skill for any ad integration task on an Android project."
+trigger:
+  keywords: [AdMob, ads, monetize, banner, interstitial, rewarded, "app open ad", "ca-app-pub", "Google ads", "ad placement", "earn revenue"]
+  when: Issue asks to add any type of ad, integrate AdMob, monetize the app, or mentions a ca-app-pub-... App ID
 ---
 
 # Android AdMob Skill

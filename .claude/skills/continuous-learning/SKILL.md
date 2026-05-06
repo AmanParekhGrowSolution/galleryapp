@@ -1,6 +1,9 @@
 ---
 name: continuous-learning
 description: Pattern extraction and skill generation for mobile development sessions. Automatically learns from your coding patterns.
+trigger:
+  keywords: ["extract pattern", "generate skill", "learn from session", "continuous learning", "create skill from"]
+  when: User wants to extract reusable patterns from the current session into a new project skill file
 ---
 
 # Continuous Learning for Mobile

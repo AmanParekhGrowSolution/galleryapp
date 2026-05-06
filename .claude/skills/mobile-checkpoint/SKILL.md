@@ -1,6 +1,9 @@
 ---
 name: mobile-checkpoint
 description: Checkpoint workflow for mobile development safety. Save/restore Android project state at critical points.
+trigger:
+  keywords: [checkpoint, "save state", rollback, "risky change", "before refactor", "large change", "destructive"]
+  when: About to make a large-scale or risky change (refactor, migration, multi-file edit) and a safety checkpoint is needed
 ---
 
 # Mobile Checkpoint Skill

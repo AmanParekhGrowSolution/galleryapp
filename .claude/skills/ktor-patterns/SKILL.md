@@ -1,6 +1,9 @@
 ---
 name: ktor-patterns
 description: Ktor client patterns for Android networking with content negotiation, error handling, and interceptors.
+trigger:
+  keywords: [Ktor, HTTP, network, API, REST, "HTTP client", request, response, serialization, OkHttp, retrofit, endpoint]
+  when: Issue involves making network/HTTP requests, integrating a REST API, or setting up an HTTP client
 ---
 
 # Ktor Client Patterns

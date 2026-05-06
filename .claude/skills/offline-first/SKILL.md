@@ -1,6 +1,9 @@
 ---
 name: offline-first
 description: Offline-first architecture patterns - NetworkBoundResource, sync strategies, conflict resolution, cache invalidation, and connectivity monitoring.
+trigger:
+  keywords: [offline, cache, sync, NetworkBoundResource, connectivity, "conflict resolution", "cache invalidation", "local database", "work offline", "no internet"]
+  when: Issue requires the app to work without internet, sync local changes to server, or serve stale cache while refreshing in the background
 ---
 
 # Offline-First Architecture Patterns

@@ -1,6 +1,9 @@
 ---
 name: mobile-instinct-v1
 description: V1 instinct-based pattern capture for mobile development. Captures patterns as code is written with immediate feedback.
+trigger:
+  keywords: ["capture pattern", "save pattern", "remember this pattern", "instinct v1", "real-time pattern"]
+  when: User wants to capture a reusable pattern immediately as new Composables, ViewModels, or repositories are being written
 ---
 
 # Mobile Instinct v1 - Pattern Capture

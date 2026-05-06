@@ -1,6 +1,9 @@
 ---
 name: feature-flags
 description: Feature flag patterns - LaunchDarkly, Firebase Remote Config, local feature flags, A/B testing, gradual rollouts, and KMP shared flag evaluation.
+trigger:
+  keywords: ["feature flag", "remote config", "A/B test", rollout, LaunchDarkly, "Firebase Remote Config", toggle, "gradual rollout", experiment]
+  when: Issue involves gating features behind flags, A/B testing, or gradually rolling out to users
 ---
 
 # Feature Flag Patterns

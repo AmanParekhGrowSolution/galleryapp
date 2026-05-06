@@ -1,6 +1,9 @@
 ---
 name: mobile-verification
 description: Automated testing workflow with pass@k metrics for mobile development. Detects flaky tests and ensures code reliability.
+trigger:
+  keywords: ["flaky test", "pass@k", reliability, "test verification", "non-deterministic test", "flakey", "test stability", "run tests multiple times"]
+  when: Tests are flaky, non-deterministic, or need pass@k reliability validation before merging
 ---
 
 # Mobile Verification Skill

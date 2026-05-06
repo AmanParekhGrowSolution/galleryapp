@@ -1,6 +1,9 @@
 ---
 name: mobile-compaction
 description: Context compaction strategies for large Android codebases. Optimize token usage while preserving critical context.
+trigger:
+  keywords: ["context limit", "token limit", compact, "large codebase", "context window", "too much context"]
+  when: The context window is getting very large and needs strategic compaction before continuing work
 ---
 
 # Mobile Compaction Skill

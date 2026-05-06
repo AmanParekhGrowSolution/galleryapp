@@ -1,6 +1,9 @@
 ---
 name: continuous-learning-v2
 description: Instinct-based learning system with confidence scoring for mobile patterns. Automatically extracts and evolves patterns.
+trigger:
+  keywords: ["confidence scoring", "instinct learning", "evolve pattern", "learning v2", "pattern confidence"]
+  when: V2 instinct-based pattern evolution with confidence scoring is needed across multiple sessions
 ---
 
 # Continuous Learning v2

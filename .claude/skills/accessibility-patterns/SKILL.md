@@ -1,6 +1,9 @@
 ---
 name: accessibility-patterns
 description: Mobile accessibility patterns for Android and iOS - content descriptions, touch targets, screen reader support, WCAG compliance, dynamic type, and color contrast.
+trigger:
+  keywords: [contentDescription, accessibility, "touch target", "screen reader", TalkBack, WCAG, semantics, "48dp", a11y, "minimumInteractiveComponentSize"]
+  when: Any Icon, Image, or interactive element is being added — or when a11y compliance review is needed
 ---
 
 # Mobile Accessibility Patterns

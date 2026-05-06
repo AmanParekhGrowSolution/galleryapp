@@ -1,6 +1,9 @@
 ---
 name: koin-patterns
 description: Koin dependency injection patterns for Android with modules, scopes, and ViewModel injection.
+trigger:
+  keywords: [Koin, DI, "dependency injection", module, single, factory, koinViewModel, "inject()", startKoin, KoinComponent]
+  when: Issue involves Koin DI module setup, ViewModel injection, or scoped dependency wiring — NOTE: this project uses manual DI; use Hilt instead if DI framework is being added
 ---
 
 # Koin Dependency Injection

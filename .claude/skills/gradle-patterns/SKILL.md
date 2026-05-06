@@ -1,6 +1,9 @@
 ---
 name: gradle-patterns
 description: Gradle build configuration patterns for Android including Version Catalogs, convention plugins, build optimization, and multi-module setup.
+trigger:
+  keywords: [gradle, "build.gradle", "libs.versions.toml", "version catalog", dependency, plugin, module, KSP, kapt, "build optimization", "convention plugin"]
+  when: Issue adds a new dependency, modifies build.gradle.kts, changes the version catalog, or sets up a new module
 ---
 
 # Gradle Build Patterns

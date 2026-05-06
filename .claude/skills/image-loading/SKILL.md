@@ -1,6 +1,9 @@
 ---
 name: image-loading
 description: Image loading patterns for mobile - Coil for Android/Compose, async image loading for iOS, caching strategies, transformations, placeholders, and error handling.
+trigger:
+  keywords: [Coil, AsyncImage, image, photo, thumbnail, bitmap, placeholder, "image cache", Glide, Picasso, "rememberAsyncImagePainter"]
+  when: Issue involves displaying images or photos in Compose UI, loading from network or disk, or adding image caching
 ---
 
 # Image Loading Patterns for Mobile

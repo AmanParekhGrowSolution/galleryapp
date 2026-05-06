@@ -1,6 +1,9 @@
 ---
 name: localization-patterns
 description: Localization patterns for mobile - string resources, plurals, RTL support, Compose localization, KMP shared strings, and locale management.
+trigger:
+  keywords: [localization, i18n, strings, RTL, locale, plural, translation, language, "strings.xml", "multi-language"]
+  when: Issue involves supporting multiple languages, RTL layout support, plural string forms, or locale-aware formatting
 ---
 
 # Localization Patterns for Mobile

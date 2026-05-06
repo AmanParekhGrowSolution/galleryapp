@@ -11,6 +11,9 @@ description: >
   Compose context. Applies for single screens or multi-screen apps. Always use this skill
   when (a) a screenshot, image, or HTML/mockup file is present AND (b) Android / Kotlin /
   Compose is mentioned or implied.
+trigger:
+  keywords: [screenshot, replicate, clone, mockup, ".html", ".htm", ".png", ".jpg", "convert this design", "turn this into code", "make this Compose screen"]
+  when: Issue includes an image/screenshot or HTML file AND asks to replicate/convert it into Kotlin Compose code
 ---
 
 # Android UI Replicator — Kotlin (Compose + XML)

@@ -1,6 +1,9 @@
 ---
 name: mobile-memory
 description: Memory persistence for mobile development context across sessions. Maintains project structure, dependencies, architecture, and test state.
+trigger:
+  keywords: ["persist context", "project memory", "remember across sessions", "architecture snapshot", "session state", "mobile-memory"]
+  when: Need to save or recall project facts, architecture decisions, or dependency state across sessions
 ---
 
 # Mobile Memory Skill

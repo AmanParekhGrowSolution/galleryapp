@@ -1,6 +1,9 @@
 ---
 name: mobile-security
 description: Android security patterns for secure storage, network security, input validation, and authentication.
+trigger:
+  keywords: [PIN, password, token, biometric, keystore, EncryptedSharedPreferences, "SHA-256", auth, credential, "secure storage", MASVS, lockout, vault, secret]
+  when: Issue involves PIN/password handling, credential storage, biometric auth, lockout logic, or any sensitive data written to disk
 ---
 
 # Mobile Security Patterns

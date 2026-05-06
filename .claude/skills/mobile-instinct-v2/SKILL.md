@@ -1,6 +1,9 @@
 ---
 name: mobile-instinct-v2
 description: V2 instinct-based observational learning. Analyzes sessions to extract reusable mobile development patterns across time.
+trigger:
+  keywords: ["observational learning", "cross-session", "evolve instinct", "instinct v2", "session analysis", "pattern evolution"]
+  when: After multiple sessions, to extract and evolve patterns that emerge consistently across development history
 ---
 
 # Mobile Instinct v2 - Observational Learning

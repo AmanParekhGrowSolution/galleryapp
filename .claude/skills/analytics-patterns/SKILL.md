@@ -1,6 +1,9 @@
 ---
 name: analytics-patterns
 description: Analytics integration patterns - event tracking, screen tracking, user properties, Firebase Analytics, custom analytics providers, and privacy compliance.
+trigger:
+  keywords: [analytics, "event tracking", "screen tracking", Firebase, GA4, "user property", "A/B test", amplitude, mixpanel, logging]
+  when: Issue involves tracking user events, screen views, or integrating an analytics SDK
 ---
 
 # Analytics Integration Patterns

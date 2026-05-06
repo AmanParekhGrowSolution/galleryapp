@@ -1,6 +1,9 @@
 ---
 name: push-notifications
 description: Push notification patterns - FCM setup for Android, APNs for iOS, notification channels, payload handling, foreground/background behavior, and rich notifications.
+trigger:
+  keywords: [FCM, "push notification", APNs, "notification channel", Firebase, "background message", "foreground notification", "FirebaseMessagingService", "POST_NOTIFICATIONS"]
+  when: Issue involves sending or receiving push notifications via FCM/Firebase or APNs
 ---
 
 # Push Notification Patterns

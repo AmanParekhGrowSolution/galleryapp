@@ -1,6 +1,9 @@
 ---
 name: feature-builder
 description: End-to-end mobile feature builder. Takes a feature from description to fully running code with E2E tests through six phases - planning, architecture review, implementation, testing, build-fix, quality gate, and verification. Supports Android, iOS, and KMP with platform auto-detection.
+trigger:
+  keywords: ["new feature", "end-to-end", "from scratch", "full feature", "zero to feature", "complete implementation", "build a feature"]
+  when: A brand-new feature needs the full pipeline - plan → implement → test → build-fix → quality gate → verify
 ---
 
 # Feature Builder Skill

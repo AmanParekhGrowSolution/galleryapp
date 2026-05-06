@@ -1,6 +1,9 @@
 ---
 name: jetpack-compose
 description: Jetpack Compose patterns for declarative UI, state management, theming, animations, and performance optimization.
+trigger:
+  keywords: [Composable, Compose, UI, animation, theming, recomposition, LazyColumn, LazyRow, Modifier, remember, derivedStateOf, "@Stable", "@Immutable"]
+  when: Any Composable screen, component, animation, theming change, or Compose performance optimization is being written
 ---
 
 # Jetpack Compose Patterns
@@ -213,6 +216,87 @@ AnimatedContent(
     }
 }
 ```
+
+## Collecting State — `collectAsStateWithLifecycle()` is mandatory
+
+```kotlin
+// ✅ Correct — stops collecting when UI is not in STARTED state (saves CPU/battery)
+val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+// ❌ Wrong — keeps collecting even when UI is in background
+val uiState by viewModel.uiState.collectAsState()
+```
+
+Add the dependency if missing: `implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.x")`
+
+## Stable Lists — Use `ImmutableList` instead of `@Immutable` hacks
+
+`List<T>` is inferred as **unstable** by the Compose compiler — every parent recomposition forces a child recomposition even when content hasn't changed.
+
+```kotlin
+// build.gradle.kts
+implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.7")
+
+// UiState
+data class HomeUiState(
+    val items: ImmutableList<Item> = persistentListOf(),  // ✅ Compose infers as stable
+)
+
+// ViewModel — convert before emitting
+_uiState.update { it.copy(items = newItems.toImmutableList()) }
+```
+
+Only apply `@Immutable` / `@Stable` manually after confirming recomposition issues in Layout Inspector — premature annotation causes silent missed-recomposition bugs.
+
+### Compose Compiler Stability Config (multi-module projects)
+
+Classes from non-Compose modules (e.g., `:domain` or `:data`) are inferred as unstable even if all fields are `val`. Fix without adding annotations to domain models:
+
+```
+// compose_compiler_config.stability_config.conf  (create at project root)
+com.example.domain.model.*
+kotlinx.collections.immutable.ImmutableList
+```
+
+```kotlin
+// app/build.gradle.kts
+composeCompiler {
+    stabilityConfigurationFile = rootProject.layout.projectDirectory.file("compose_compiler_config.stability_config.conf")
+}
+```
+
+## Previews
+
+Always provide a preview for every Screen composable. Use a dedicated preview data builder.
+
+```kotlin
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_NO, name = "Light")
+@Preview(showBackground = true, uiMode = UI_MODE_NIGHT_YES, name = "Dark")
+@Composable
+private fun HomeScreenPreview() {
+    AppTheme {
+        HomeScreen(
+            uiState = HomeUiState(
+                items = persistentListOf(Item("1", "Sample"), Item("2", "Another")),
+            ),
+            snackbarHostState = remember { SnackbarHostState() },
+            onRefresh = {}, onSearchChanged = {}, onItemClick = {}, onDismissError = {},
+        )
+    }
+}
+```
+
+## Anti-Patterns
+
+| Anti-pattern | Fix |
+|---|---|
+| `collectAsState()` | `collectAsStateWithLifecycle()` |
+| `List<T>` in UiState | `ImmutableList<T>` from kotlinx-collections-immutable |
+| Sorting/filtering inside `items { }` | `remember(list) { list.sortedBy { ... } }` above LazyColumn |
+| Missing `key =` on `items()` | Always supply `key = { it.id }` |
+| Calling ViewModel in Screen composable | Only in Route composable; Screen is stateless |
+| `@Immutable` without Layout Inspector check | Profile first; use compiler stability config instead |
+| Business logic in composable | Logic goes in ViewModel; composable only reads state + calls callbacks |
 
 ---
 

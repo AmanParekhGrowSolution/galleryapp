@@ -1,6 +1,9 @@
 ---
 name: navigation-compose
 description: Jetpack Compose Navigation patterns - type-safe routes, NavHost setup, argument passing, deep links, nested navigation graphs, and bottom navigation.
+trigger:
+  keywords: [NavHost, NavController, route, navigation, screen, "bottom nav", "tab navigation", "back stack", NavGraph, "type-safe route"]
+  when: Issue adds new screens, changes navigation routes, modifies NavHost/NavGraph, or adds bottom navigation tabs
 ---
 
 # Jetpack Compose Navigation Patterns

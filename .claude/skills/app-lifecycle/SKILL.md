@@ -1,6 +1,9 @@
 ---
 name: app-lifecycle
 description: App lifecycle patterns - process death handling, SavedStateHandle, ViewModel restoration, lifecycle-aware components, and background task management.
+trigger:
+  keywords: [AndroidViewModel, "process death", SavedStateHandle, background, foreground, restore, WorkManager, ForegroundService, "Application context", lifecycle]
+  when: ViewModel needs Application context, state must survive process death/rotation, background tasks are required, or foreground service is used
 ---
 
 # App Lifecycle Patterns

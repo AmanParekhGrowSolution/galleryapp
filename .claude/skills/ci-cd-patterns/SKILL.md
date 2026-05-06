@@ -1,6 +1,9 @@
 ---
 name: ci-cd-patterns
 description: CI/CD patterns for mobile - GitHub Actions workflows for Android/iOS, Fastlane integration, code signing, artifact publishing, and automated release.
+trigger:
+  keywords: [CI, CD, "GitHub Actions", workflow, pipeline, Fastlane, release, signing, artifact, "automated build", ".github/workflows"]
+  when: Issue touches CI pipelines, automated release, code signing, or build workflow configuration
 ---
 
 # CI/CD Patterns for Mobile

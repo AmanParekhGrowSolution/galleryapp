@@ -1,6 +1,9 @@
 ---
 name: deep-linking
 description: Deep linking patterns for mobile - Android App Links, iOS Universal Links, intent filters, URI handling, deferred deep links, and navigation integration.
+trigger:
+  keywords: ["deep link", "App Link", "Universal Link", "intent filter", URI, "deferred deep link", "notification tap", scheme, "assetlinks.json"]
+  when: Issue involves opening the app via URL, QR code, notification tap, or adding intent-filter to manifest
 ---
 
 # Deep Linking Patterns for Mobile

@@ -1,6 +1,9 @@
 ---
 name: m3-expressive
 description: Material 3 Expressive design patterns for Jetpack Compose - expressive theming, motion physics, shape morphing, typography emphasis, color emphasis, and all 28 expressive components.
+trigger:
+  keywords: ["Material 3 Expressive", "M3 Expressive", "spring animation", "shape morphing", "motion physics", "expressive component", "MotionScheme", "ShapeDefaults"]
+  when: Issue involves Material 3 Expressive components, spring-based physics motion, shape morphing, or expressive color/typography emphasis
 ---
 
 # Material 3 Expressive for Jetpack Compose

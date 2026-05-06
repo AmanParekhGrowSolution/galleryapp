@@ -1,6 +1,9 @@
 ---
 name: android-patterns
 description: Core Android development patterns for Kotlin, including coroutines, lifecycle management, and functional programming idioms.
+trigger:
+  keywords: [ViewModel, AndroidViewModel, viewModelScope, StateFlow, coroutine, "null safety", scope, lifecycle, sealed, Result]
+  when: Any new ViewModel, repository, use case, or Kotlin class is being created or substantially modified
 ---
 
 # Android Development Patterns

@@ -1,6 +1,9 @@
 ---
 name: room-patterns
 description: Room database patterns for Android - entity definitions, DAO interfaces, Database class, migrations, TypeConverters, and Flow integration.
+trigger:
+  keywords: [Room, database, DAO, Entity, migration, SQLite, "@Database", "@Dao", "@Entity", TypeConverter, "local database", "persist data"]
+  when: Issue involves storing structured data locally in a SQLite database via Room
 ---
 
 # Room Database Patterns

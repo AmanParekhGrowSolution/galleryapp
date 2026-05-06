@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -20,24 +21,32 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
-import androidx.compose.material3.Icon
+import com.example.galleryapp.ui.theme.AccentGreen
+import com.example.galleryapp.ui.theme.AccentPurple
 import com.example.galleryapp.ui.theme.BrandBlue
 import com.example.galleryapp.ui.theme.DividerLight
 import com.example.galleryapp.ui.theme.OnSurfaceDark
@@ -59,6 +68,19 @@ private val languages = listOf(
     LanguageOption("🇩🇪", R.string.lang_german, R.string.lang_german_sub, "German"),
     LanguageOption("🇸🇦", R.string.lang_arabic, R.string.lang_arabic_sub, "Arabic"),
     LanguageOption("🇯🇵", R.string.lang_japanese, R.string.lang_japanese_sub, "Japanese"),
+)
+
+private data class FeaturePage(
+    val icon: ImageVector,
+    val iconBg: Color,
+    val titleRes: Int,
+    val subtitleRes: Int
+)
+
+private val featurePages = listOf(
+    FeaturePage(Icons.Default.CloudOff, BrandBlue, R.string.offline_title, R.string.offline_subtitle),
+    FeaturePage(Icons.Default.DeleteSweep, AccentGreen, R.string.storage_title, R.string.storage_subtitle),
+    FeaturePage(Icons.Default.Lock, AccentPurple, R.string.vault_onboard_title, R.string.vault_onboard_subtitle),
 )
 
 @Composable
@@ -86,44 +108,24 @@ fun OnboardingScreen(
             )
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(bottom = 96.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Spacer(modifier = Modifier.height(72.dp))
-
-            Text(
-                text = stringResource(R.string.choose_language),
-                color = OnSurfaceDark,
-                fontSize = 26.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 24.dp)
+        when (uiState.currentPage) {
+            0 -> LanguagePageContent(
+                uiState = uiState,
+                onSelectLanguage = viewModel::selectLanguage,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(bottom = 120.dp)
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = stringResource(R.string.choose_language_subtitle_new),
-                color = SubtextGray,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(horizontal = 24.dp)
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Column(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                languages.forEach { lang ->
-                    val selected = uiState.selectedLanguage == lang.code
-                    LanguageRow(
-                        flag = lang.flag,
-                        name = stringResource(lang.nameRes),
-                        subName = stringResource(lang.subNameRes),
-                        selected = selected,
-                        onClick = { viewModel.selectLanguage(lang.code) }
+            else -> {
+                val pageIndex = uiState.currentPage - 1
+                if (pageIndex < featurePages.size) {
+                    FeaturePageContent(
+                        page = featurePages[pageIndex],
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .padding(bottom = 120.dp)
                     )
                 }
             }
@@ -134,16 +136,125 @@ fun OnboardingScreen(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .background(Color.White)
+                .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             PageDots(currentPage = uiState.currentPage, total = uiState.totalPages)
             Spacer(modifier = Modifier.height(12.dp))
+            val buttonLabel = if (viewModel.isLastPage()) {
+                stringResource(R.string.get_started)
+            } else {
+                stringResource(R.string.next)
+            }
             NextButton(
-                label = stringResource(R.string.next),
+                label = buttonLabel,
                 onClick = { if (viewModel.isLastPage()) onComplete() else viewModel.nextPage() }
             )
         }
+    }
+}
+
+@Composable
+private fun LanguagePageContent(
+    uiState: OnboardingUiState,
+    onSelectLanguage: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.verticalScroll(rememberScrollState())
+    ) {
+        Spacer(modifier = Modifier.height(72.dp))
+
+        Text(
+            text = stringResource(R.string.choose_language),
+            color = OnSurfaceDark,
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.choose_language_subtitle_new),
+            color = SubtextGray,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            languages.forEach { lang ->
+                val selected = uiState.selectedLanguage == lang.code
+                LanguageRow(
+                    flag = lang.flag,
+                    name = stringResource(lang.nameRes),
+                    subName = stringResource(lang.subNameRes),
+                    selected = selected,
+                    onClick = { onSelectLanguage(lang.code) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeaturePageContent(
+    page: FeaturePage,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier.padding(horizontal = 32.dp)
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(page.iconBg.copy(alpha = 0.12f))
+        ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(88.dp)
+                    .clip(CircleShape)
+                    .background(page.iconBg.copy(alpha = 0.18f))
+            ) {
+                Icon(
+                    imageVector = page.icon,
+                    contentDescription = null,
+                    tint = page.iconBg,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .semantics { role = Role.Image }
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
+
+        Text(
+            text = stringResource(page.titleRes),
+            color = OnSurfaceDark,
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        Text(
+            text = stringResource(page.subtitleRes),
+            color = SubtextGray,
+            fontSize = 16.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 24.sp
+        )
     }
 }
 
@@ -191,7 +302,9 @@ private fun LanguageRow(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(14.dp).semantics { role = Role.Image }
+                    modifier = Modifier
+                        .size(14.dp)
+                        .semantics { role = Role.Image }
                 )
             }
         }
@@ -206,7 +319,10 @@ private fun PageDots(currentPage: Int, total: Int) {
             Box(
                 modifier = Modifier
                     .height(4.dp)
-                    .then(if (isActive) Modifier.size(width = 24.dp, height = 4.dp) else Modifier.size(width = 8.dp, height = 4.dp))
+                    .then(
+                        if (isActive) Modifier.size(width = 24.dp, height = 4.dp)
+                        else Modifier.size(width = 8.dp, height = 4.dp)
+                    )
                     .clip(CircleShape)
                     .background(if (isActive) BrandBlue else Color(0xFFCCCCCC))
             )
@@ -221,7 +337,9 @@ private fun NextButton(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(28.dp))
-            .background(BrandBlue)
+            .background(
+                Brush.linearGradient(listOf(BrandBlue, Color(0xFF4F46E5)))
+            )
             .clickable(onClick = onClick)
             .padding(vertical = 16.dp)
     ) {

@@ -92,7 +92,10 @@ fun MainScreen(
                 .padding(bottom = 64.dp)
         ) {
             composable(Screen.Home) {
-                HomeScreen(onPhotoClick = onNavigateToPhotoViewer)
+                HomeScreen(
+                    onPhotoClick = onNavigateToPhotoViewer,
+                    onVaultClick = onNavigateToVault
+                )
             }
             composable(Screen.Albums) {
                 AlbumsScreen(

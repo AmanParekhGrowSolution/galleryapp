@@ -18,10 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -123,7 +123,7 @@ private fun AlbumsTopBar() {
             Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add), tint = OnSurfaceDark)
         }
         IconButton(onClick = {}) {
-            Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.sort), tint = OnSurfaceDark)
+            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = stringResource(R.string.sort), tint = OnSurfaceDark)
         }
         IconButton(onClick = {}) {
             Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = OnSurfaceDark)

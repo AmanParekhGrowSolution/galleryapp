@@ -1,6 +1,9 @@
 package com.example.galleryapp.ui.navigation
 
+import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,8 +28,14 @@ import com.example.galleryapp.ui.video.VideoPlayerScreen
 import com.example.galleryapp.ui.video.VideoTrimmerScreen
 import com.example.galleryapp.ui.viewer.PhotoViewerScreen
 
+private const val PREFS_NAME = "gallery_prefs"
+private const val KEY_ONBOARDING_DONE = "onboarding_done"
+
 @Composable
 fun AppNavigation() {
+    val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
+    val isFirstRun = remember { !prefs.getBoolean(KEY_ONBOARDING_DONE, false) }
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = Screen.Splash) {
@@ -42,13 +51,15 @@ fun AppNavigation() {
                     navController.navigate(Screen.Main) {
                         popUpTo(Screen.Splash) { inclusive = true }
                     }
-                }
+                },
+                isFirstRun = isFirstRun
             )
         }
 
         composable(Screen.Onboarding) {
             OnboardingScreen(
                 onComplete = {
+                    prefs.edit().putBoolean(KEY_ONBOARDING_DONE, true).apply()
                     navController.navigate(Screen.Main) {
                         popUpTo(Screen.Onboarding) { inclusive = true }
                     }

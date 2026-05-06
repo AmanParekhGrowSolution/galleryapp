@@ -1,13 +1,16 @@
 package com.example.galleryapp.ui.security
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import com.example.galleryapp.data.local.PrefsManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class AppLockSetupViewModel : ViewModel() {
+class AppLockSetupViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val prefs = PrefsManager.create(application)
     private val _uiState = MutableStateFlow<AppLockSetupUiState>(AppLockSetupUiState.PinEntry())
     val uiState: StateFlow<AppLockSetupUiState> = _uiState.asStateFlow()
 
@@ -35,17 +38,21 @@ class AppLockSetupViewModel : ViewModel() {
 
         if (!state.isConfirming) {
             firstPin = state.pin
-            _uiState.value = AppLockSetupUiState.PinEntry(isConfirming = true, enableBiometric = state.enableBiometric)
+            _uiState.value = AppLockSetupUiState.PinEntry(
+                isConfirming = true,
+                enableBiometric = state.enableBiometric
+            )
         } else {
             if (state.pin == firstPin) {
+                prefs.setVaultPin(state.pin)
                 _uiState.value = AppLockSetupUiState.Saved
             } else {
+                firstPin = ""
                 _uiState.value = AppLockSetupUiState.PinEntry(
                     isConfirming = true,
                     enableBiometric = state.enableBiometric,
                     errorMessage = "PINs don't match — try again",
                 )
-                firstPin = ""
             }
         }
     }

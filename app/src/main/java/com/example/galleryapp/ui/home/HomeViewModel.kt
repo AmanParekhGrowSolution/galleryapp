@@ -1,6 +1,7 @@
 package com.example.galleryapp.ui.home
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.galleryapp.data.repository.GalleryRepositoryImpl
 import com.example.galleryapp.domain.model.Photo
@@ -25,10 +26,13 @@ sealed interface HomeUiState {
 
 data class PhotoSection(val dateLabel: String, val photos: List<Photo>)
 
-class HomeViewModel : ViewModel() {
-    private val repository = GalleryRepositoryImpl()
+class HomeViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = GalleryRepositoryImpl(application)
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+
+    private val allPhotos = MutableStateFlow<List<Photo>>(emptyList())
+    private val activeFilter = MutableStateFlow(PhotoFilter.All)
 
     init {
         loadPhotos()
@@ -37,32 +41,42 @@ class HomeViewModel : ViewModel() {
     private fun loadPhotos() {
         viewModelScope.launch {
             repository.getPhotos().collect { photos ->
-                val sections = groupByDate(photos)
-                _uiState.update {
-                    HomeUiState.Success(
-                        sections = sections,
-                        selectedFilter = PhotoFilter.All,
-                        selectionMode = false,
-                        selectedIds = emptySet()
-                    )
-                }
+                allPhotos.value = photos
+                applyFilterAndEmit(photos, activeFilter.value)
             }
         }
     }
 
     fun selectFilter(filter: PhotoFilter) {
-        _uiState.update { state ->
-            if (state is HomeUiState.Success) state.copy(selectedFilter = filter) else state
+        activeFilter.value = filter
+        applyFilterAndEmit(allPhotos.value, filter)
+    }
+
+    private fun applyFilterAndEmit(photos: List<Photo>, filter: PhotoFilter) {
+        val filtered = when (filter) {
+            PhotoFilter.All -> photos
+            PhotoFilter.Videos -> photos.filter { it.mimeType.startsWith("video/") }
+            PhotoFilter.Screenshots -> photos.filter {
+                it.mimeType == "image/png" ||
+                it.displayName.contains("screenshot", ignoreCase = true)
+            }
+            PhotoFilter.GIFs -> photos.filter { it.mimeType == "image/gif" }
+        }
+        val sections = groupByDate(filtered)
+        _uiState.update { current ->
+            HomeUiState.Success(
+                sections = sections,
+                selectedFilter = filter,
+                selectionMode = (current as? HomeUiState.Success)?.selectionMode ?: false,
+                selectedIds = (current as? HomeUiState.Success)?.selectedIds ?: emptySet()
+            )
         }
     }
 
     fun toggleSelectionMode() {
         _uiState.update { state ->
             if (state is HomeUiState.Success) {
-                state.copy(
-                    selectionMode = !state.selectionMode,
-                    selectedIds = emptySet()
-                )
+                state.copy(selectionMode = !state.selectionMode, selectedIds = emptySet())
             } else state
         }
     }

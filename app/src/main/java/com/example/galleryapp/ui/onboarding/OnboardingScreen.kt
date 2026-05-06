@@ -1,6 +1,7 @@
 package com.example.galleryapp.ui.onboarding
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,45 +14,51 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Translate
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
-import com.example.galleryapp.ui.components.PrimaryGradientButton
+import androidx.compose.material3.Icon
+import com.example.galleryapp.ui.theme.BrandBlue
+import com.example.galleryapp.ui.theme.DividerLight
+import com.example.galleryapp.ui.theme.OnSurfaceDark
+import com.example.galleryapp.ui.theme.SubtextGray
 
-private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
-private val accentGradient = listOf(Color(0xFF06B6D4), Color(0xFF3B82F6))
-private val successGradient = listOf(Color(0xFF10B981), Color(0xFF059669))
+private data class LanguageOption(
+    val flag: String,
+    val nameRes: Int,
+    val subNameRes: Int,
+    val code: String
+)
 
-private data class OnboardPage(
-    val icon: ImageVector,
-    val gradient: List<Color>,
-    val titleRes: Int,
-    val subtitleRes: Int
+private val languages = listOf(
+    LanguageOption("🇬🇧", R.string.lang_english, R.string.lang_english_sub, "English"),
+    LanguageOption("🇮🇳", R.string.lang_hindi, R.string.lang_hindi_sub, "Hindi"),
+    LanguageOption("🇪🇸", R.string.lang_spanish, R.string.lang_spanish_sub, "Spanish"),
+    LanguageOption("🇧🇷", R.string.lang_portuguese, R.string.lang_portuguese_sub, "Portuguese"),
+    LanguageOption("🇫🇷", R.string.lang_french, R.string.lang_french_sub, "French"),
+    LanguageOption("🇩🇪", R.string.lang_german, R.string.lang_german_sub, "German"),
+    LanguageOption("🇸🇦", R.string.lang_arabic, R.string.lang_arabic_sub, "Arabic"),
+    LanguageOption("🇯🇵", R.string.lang_japanese, R.string.lang_japanese_sub, "Japanese"),
 )
 
 @Composable
@@ -61,158 +68,168 @@ fun OnboardingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val pages = listOf(
-        OnboardPage(Icons.Default.Translate, accentGradient, R.string.choose_language, R.string.choose_language_subtitle),
-        OnboardPage(Icons.Default.Lock, primaryGradient, R.string.offline_title, R.string.offline_subtitle),
-        OnboardPage(Icons.Default.Storage, successGradient, R.string.storage_title, R.string.storage_subtitle),
-        OnboardPage(Icons.Default.Image, primaryGradient, R.string.permission_title, R.string.permission_subtitle),
-    )
-
-    val page = pages.getOrNull(uiState.currentPage) ?: pages.last()
-    val isLast = viewModel.isLastPage()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+            .background(Color.White)
     ) {
-        if (uiState.currentPage < pages.size - 1) {
+        if (uiState.currentPage < uiState.totalPages - 1) {
             Text(
                 text = stringResource(R.string.skip),
-                color = Color.White.copy(alpha = 0.87f),
+                color = SubtextGray,
+                fontSize = 15.sp,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(20.dp)
-                    .clickable { onComplete() },
-                fontSize = 15.sp
+                    .clickable { onComplete() }
             )
         }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 32.dp)
-                .padding(bottom = 48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .statusBarsPadding()
+                .padding(bottom = 96.dp)
+                .verticalScroll(rememberScrollState())
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(RoundedCornerShape(32.dp))
-                    .background(Brush.linearGradient(page.gradient))
-            ) {
-                Icon(
-                    imageVector = page.icon,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(64.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(72.dp))
 
             Text(
-                text = stringResource(page.titleRes),
-                color = Color.White,
+                text = stringResource(R.string.choose_language),
+                color = OnSurfaceDark,
                 fontSize = 26.sp,
                 fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                modifier = Modifier.padding(horizontal = 24.dp)
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = stringResource(page.subtitleRes),
-                color = Color.White.copy(alpha = 0.87f),
-                fontSize = 15.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 22.sp
+                text = stringResource(R.string.choose_language_subtitle_new),
+                color = SubtextGray,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(horizontal = 24.dp)
             )
 
-            if (uiState.currentPage == 0) {
-                Spacer(modifier = Modifier.height(24.dp))
-                LanguageItem("English", uiState.selectedLanguage == "English") {
-                    viewModel.selectLanguage("English")
-                }
-                LanguageItem("हिंदी", uiState.selectedLanguage == "हिंदी") {
-                    viewModel.selectLanguage("हिंदी")
-                }
-                LanguageItem("Español", uiState.selectedLanguage == "Español") {
-                    viewModel.selectLanguage("Español")
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Column(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                languages.forEach { lang ->
+                    val selected = uiState.selectedLanguage == lang.code
+                    LanguageRow(
+                        flag = lang.flag,
+                        name = stringResource(lang.nameRes),
+                        subName = stringResource(lang.subNameRes),
+                        selected = selected,
+                        onClick = { viewModel.selectLanguage(lang.code) }
+                    )
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(40.dp))
-
-            PageIndicator(currentPage = uiState.currentPage, totalPages = uiState.totalPages)
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            PrimaryGradientButton(
-                label = when {
-                    isLast -> stringResource(R.string.allow_continue)
-                    uiState.currentPage == 0 -> stringResource(R.string.next)
-                    else -> stringResource(R.string.next)
-                },
-                onClick = {
-                    if (isLast) onComplete() else viewModel.nextPage()
-                },
-                modifier = Modifier.fillMaxWidth()
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            PageDots(currentPage = uiState.currentPage, total = uiState.totalPages)
+            Spacer(modifier = Modifier.height(12.dp))
+            NextButton(
+                label = stringResource(R.string.next),
+                onClick = { if (viewModel.isLastPage()) onComplete() else viewModel.nextPage() }
             )
         }
     }
 }
 
 @Composable
-private fun LanguageItem(name: String, selected: Boolean, onClick: () -> Unit) {
+private fun LanguageRow(
+    flag: String,
+    name: String,
+    subName: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 10.dp),
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (selected) Color(0xFFEEF3FF) else Color(0xFFF5F6FA))
+            .border(
+                width = if (selected) 1.5.dp else 1.dp,
+                color = if (selected) BrandBlue else Color.Transparent,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = name,
-            color = Color.White,
-            fontSize = 16.sp,
-            modifier = Modifier.weight(1f)
-        )
-        if (selected) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
+        Text(text = flag, fontSize = 28.sp)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 14.dp)
+        ) {
+            Text(name, color = OnSurfaceDark, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+            Text(subName, color = SubtextGray, fontSize = 13.sp)
+        }
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(22.dp)
+                .clip(CircleShape)
+                .background(if (selected) BrandBlue else Color.White)
+                .border(1.5.dp, if (selected) BrandBlue else DividerLight, CircleShape)
+        ) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp).semantics { role = Role.Image }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PageDots(currentPage: Int, total: Int) {
+    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        repeat(total) { index ->
+            val isActive = index == currentPage
+            Box(
+                modifier = Modifier
+                    .height(4.dp)
+                    .then(if (isActive) Modifier.size(width = 24.dp, height = 4.dp) else Modifier.size(width = 8.dp, height = 4.dp))
+                    .clip(CircleShape)
+                    .background(if (isActive) BrandBlue else Color(0xFFCCCCCC))
             )
         }
     }
 }
 
 @Composable
-private fun PageIndicator(currentPage: Int, totalPages: Int) {
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        repeat(totalPages) { index ->
-            Box(
-                modifier = Modifier
-                    .height(6.dp)
-                    .width(if (index == currentPage) 22.dp else 6.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (index == currentPage)
-                            Brush.linearGradient(listOf(Color(0xFF6366F1), Color(0xFF8B5CF6)))
-                        else
-                            Brush.linearGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.3f),
-                                    Color.White.copy(alpha = 0.3f)
-                                )
-                            )
-                    )
-            )
-        }
+private fun NextButton(label: String, onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(28.dp))
+            .background(BrandBlue)
+            .clickable(onClick = onClick)
+            .padding(vertical = 16.dp)
+    ) {
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }

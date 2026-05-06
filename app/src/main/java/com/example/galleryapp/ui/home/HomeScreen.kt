@@ -4,12 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,9 +22,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Apps
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,17 +40,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.R
 import com.example.galleryapp.domain.model.Photo
+import com.example.galleryapp.ui.theme.BrandBlue
+import com.example.galleryapp.ui.theme.OnSurfaceDark
+import com.example.galleryapp.ui.theme.SubtextGray
+import com.example.galleryapp.ui.theme.SurfaceLight
+import com.example.galleryapp.ui.theme.TryFreeGold
+import com.example.galleryapp.ui.theme.TryFreeGoldLight
 
-private val bgGradient = listOf(Color(0xFF0F0C29), Color(0xFF302B63), Color(0xFF24243E))
-private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
+private val tryFreeGradient = listOf(TryFreeGold, TryFreeGoldLight)
+
+private data class QuickItem(
+    val icon: ImageVector,
+    val labelRes: Int,
+    val tintColor: Color
+)
+
+private val quickItems = listOf(
+    QuickItem(Icons.Default.Favorite, R.string.quick_access_favorites, Color(0xFFEF4444)),
+    QuickItem(Icons.Default.CameraAlt, R.string.quick_access_camera, Color(0xFF14B8A6)),
+    QuickItem(Icons.Default.Update, R.string.quick_access_recent, Color(0xFFF97316)),
+    QuickItem(Icons.Default.Lock, R.string.quick_access_vault, Color(0xFF1A6BFF)),
+)
 
 @Composable
 fun HomeScreen(
@@ -56,30 +84,24 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(bgGradient))
+            .background(SurfaceLight)
     ) {
         when (val state = uiState) {
-            is HomeUiState.Loading -> {
-                CircularProgressIndicator(
-                    color = Color(0xFF8B5CF6),
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-            is HomeUiState.Success -> {
-                HomeContent(
-                    state = state,
-                    onPhotoClick = onPhotoClick,
-                    onFilterSelect = viewModel::selectFilter,
-                    onToggleSelection = viewModel::togglePhotoSelection
-                )
-            }
-            is HomeUiState.Error -> {
-                Text(
-                    text = state.message,
-                    color = Color.White,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+            is HomeUiState.Loading -> CircularProgressIndicator(
+                color = BrandBlue,
+                modifier = Modifier.align(Alignment.Center)
+            )
+            is HomeUiState.Success -> HomeContent(
+                state = state,
+                onPhotoClick = onPhotoClick,
+                onFilterSelect = viewModel::selectFilter,
+                onToggleSelection = viewModel::togglePhotoSelection
+            )
+            is HomeUiState.Error -> Text(
+                text = state.message,
+                color = OnSurfaceDark,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
     }
 }
@@ -98,7 +120,7 @@ private fun HomeContent(
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            HomeTopBar(onSearchClick = {})
+            HomeTopBar()
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -109,11 +131,15 @@ private fun HomeContent(
             )
         }
 
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            QuickAccessRow()
+        }
+
         state.sections.forEach { section ->
             item(span = { GridItemSpan(maxLineSpan) }) {
                 SectionHeader(label = section.dateLabel)
             }
-            items(section.photos) { photo ->
+            items(section.photos, key = { it.id }) { photo ->
                 PhotoThumbnailItem(
                     photo = photo,
                     isSelected = photo.id in state.selectedIds,
@@ -129,34 +155,49 @@ private fun HomeContent(
 }
 
 @Composable
-private fun HomeTopBar(onSearchClick: () -> Unit) {
+private fun HomeTopBar() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .background(Color.White)
+            .padding(horizontal = 4.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = stringResource(R.string.gallery_title),
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp,
-            modifier = Modifier.weight(1f)
-        )
         IconButton(onClick = {}) {
             Icon(
-                imageVector = Icons.Default.Apps,
-                contentDescription = stringResource(R.string.content_desc_grid_view),
-                tint = Color.White
+                imageVector = Icons.Default.Menu,
+                contentDescription = stringResource(R.string.content_desc_menu),
+                tint = OnSurfaceDark
             )
         }
-        Spacer(modifier = Modifier.width(4.dp))
-        IconButton(onClick = onSearchClick) {
+        Text(
+            text = stringResource(R.string.gallery_title),
+            color = BrandBlue,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.sp,
+            modifier = Modifier.weight(1f)
+        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .background(Brush.linearGradient(tryFreeGradient))
+                .clickable {}
+                .padding(horizontal = 14.dp, vertical = 6.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.try_free),
+                color = Color.White,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        IconButton(onClick = {}) {
             Icon(
                 imageVector = Icons.Default.Search,
                 contentDescription = stringResource(R.string.content_desc_search),
-                tint = Color.White
+                tint = OnSurfaceDark
             )
         }
     }
@@ -171,7 +212,8 @@ private fun FilterChipsRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .background(Color.White)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         filters.forEach { filter ->
@@ -180,24 +222,14 @@ private fun FilterChipsRow(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        if (isSelected)
-                            Brush.linearGradient(primaryGradient)
-                        else
-                            Brush.linearGradient(
-                                listOf(
-                                    Color.White.copy(alpha = 0.1f),
-                                    Color.White.copy(alpha = 0.1f)
-                                )
-                            )
-                    )
+                    .background(if (isSelected) BrandBlue else Color(0xFFF0F1F5))
                     .clickable { onFilterSelect(filter) }
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .padding(horizontal = 14.dp, vertical = 7.dp)
             ) {
                 Text(
                     text = filter.name,
-                    color = Color.White,
-                    fontSize = 12.sp,
+                    color = if (isSelected) Color.White else SubtextGray,
+                    fontSize = 13.sp,
                     fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 )
             }
@@ -206,23 +238,67 @@ private fun FilterChipsRow(
 }
 
 @Composable
+private fun QuickAccessRow() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Color.White)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceAround
+    ) {
+        quickItems.forEach { item ->
+            QuickAccessItem(item)
+        }
+    }
+}
+
+@Composable
+private fun QuickAccessItem(item: QuickItem) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.clickable {}
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(52.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(item.tintColor.copy(alpha = 0.12f))
+        ) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = stringResource(item.labelRes),
+                tint = item.tintColor,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(item.labelRes),
+            color = SubtextGray,
+            fontSize = 11.sp
+        )
+    }
+}
+
+@Composable
 private fun SectionHeader(label: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+            .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            color = Color.White,
+            color = OnSurfaceDark,
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold
         )
         Text(
             text = stringResource(R.string.select),
-            color = Color(0xFF8B5CF6),
+            color = BrandBlue,
             fontSize = 13.sp
         )
     }
@@ -240,7 +316,7 @@ private fun PhotoThumbnailItem(
             .aspectRatio(1f)
             .padding(1.dp)
             .clip(RoundedCornerShape(2.dp))
-            .background(Brush.linearGradient(listOf(Color(photo.placeholderColor), Color(photo.placeholderColor).copy(alpha = 0.85f))))
+            .background(Color(photo.placeholderColor))
             .clickable(onClick = onClick)
     ) {
         if (selectionMode) {
@@ -249,23 +325,16 @@ private fun PhotoThumbnailItem(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(4.dp)
-                    .size(20.dp)
+                    .size(22.dp)
                     .clip(CircleShape)
-                    .background(
-                        if (isSelected)
-                            Brush.linearGradient(primaryGradient)
-                        else
-                            Brush.linearGradient(
-                                listOf(Color.White.copy(alpha = 0.3f), Color.White.copy(alpha = 0.3f))
-                            )
-                    )
+                    .background(if (isSelected) BrandBlue else Color.White.copy(alpha = 0.6f))
             ) {
                 if (isSelected) {
                     Icon(
-                        imageVector = Icons.Default.Favorite,
+                        imageVector = Icons.Default.Check,
                         contentDescription = null,
                         tint = Color.White,
-                        modifier = Modifier.size(12.dp)
+                        modifier = Modifier.size(14.dp).semantics { role = Role.Image }
                     )
                 }
             }

@@ -238,6 +238,68 @@
     <string name="app_lock_biometric">Also use fingerprint</string>
     <string name="app_lock_confirm_pin">Confirm PIN</string>
 
+    <!-- Splash -->
+    <string name="splash_footer">Offline · Private · Local-first</string>
+    <string name="splash_tagline_new">Your Photo Manager</string>
+
+    <!-- Onboarding languages -->
+    <string name="lang_english">English</string>
+    <string name="lang_hindi">हिन्दी</string>
+    <string name="lang_spanish">Español</string>
+    <string name="lang_portuguese">Português</string>
+    <string name="lang_french">Français</string>
+    <string name="lang_german">Deutsch</string>
+    <string name="lang_arabic">العربية</string>
+    <string name="lang_japanese">日本語</string>
+    <string name="lang_english_sub">English</string>
+    <string name="lang_hindi_sub">Hindi</string>
+    <string name="lang_spanish_sub">Spanish</string>
+    <string name="lang_portuguese_sub">Portuguese</string>
+    <string name="lang_french_sub">French</string>
+    <string name="lang_german_sub">German</string>
+    <string name="lang_arabic_sub">Arabic</string>
+    <string name="lang_japanese_sub">Japanese</string>
+    <string name="choose_language_subtitle_new">You can change it later in Settings</string>
+
+    <!-- Home quick access -->
+    <string name="quick_access_favorites">Favorites</string>
+    <string name="quick_access_camera">Camera</string>
+    <string name="quick_access_recent">Recent</string>
+    <string name="quick_access_vault">Vault</string>
+    <string name="filter_all">All</string>
+    <string name="filter_photos">Photos</string>
+    <string name="filter_videos">Videos</string>
+    <string name="filter_screenshots">Screenshots</string>
+    <string name="filter_gifs">GIFs</string>
+
+    <!-- Search -->
+    <string name="search_hint_full">Search photos, people, places…</string>
+    <string name="search_ai_subtitle">Try &#34;dog at the beach&#34; or &#34;blue car&#34;</string>
+    <string name="search_ai_label">AI search · Offline</string>
+    <string name="see_all">See all</string>
+    <string name="map_link">Map</string>
+
+    <!-- Moments -->
+    <string name="recent_stories">Recent stories</string>
+    <string name="travel_timeline">Travel timeline</string>
+
+    <!-- Settings extra -->
+    <string name="hide_app_icon">Hide app icon</string>
+    <string name="hide_app_icon_sub">Disguise as calculator</string>
+    <string name="private_vault">Private Vault</string>
+    <string name="private_vault_sub">Locked locally with PIN</string>
+    <string name="active">Active</string>
+    <string name="system">System</string>
+    <string name="four_columns">4 columns</string>
+    <string name="smart_cleaner">Smart Cleaner</string>
+    <string name="smart_cleaner_sub">%1$s GB can be freed</string>
+    <string name="recently_deleted_sub">%1$d items · auto-empty %2$dd</string>
+    <string name="cloud_backup_sub">Off — local only</string>
+    <string name="fingerprint_face_pin">Fingerprint, Face, PIN</string>
+
+    <!-- Separator -->
+    <string name="separator_dot"> · </string>
+
     <!-- Content descriptions -->
     <string name="content_desc_back">Back</string>
     <string name="content_desc_settings">Settings</string>

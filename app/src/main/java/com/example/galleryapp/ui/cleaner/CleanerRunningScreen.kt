@@ -23,11 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,18 +33,21 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.galleryapp.ui.theme.AccentGreen
 import com.example.galleryapp.ui.theme.BrandBlue
 import com.example.galleryapp.ui.theme.DarkBg
 import com.example.galleryapp.ui.theme.InterFontFamily
 import com.example.galleryapp.ui.theme.OnSurfaceDark
 import com.example.galleryapp.ui.theme.SubtextGray
-import kotlinx.coroutines.delay
 
 @Composable
 fun CleanerRunningScreen(
     onClose: () -> Unit,
     dark: Boolean = false,
+    viewModel: CleanerRunningViewModel = viewModel(),
 ) {
     val fg = if (dark) Color.White else OnSurfaceDark
     val subFg = if (dark) Color(0x99FFFFFF) else SubtextGray
@@ -57,15 +56,12 @@ fun CleanerRunningScreen(
     val cardBorder = if (dark) Color(0x0FFFFFFF) else Color(0xFFE8EFF6)
     val dotDivider = if (dark) Color(0x0AFFFFFF) else Color(0xFFEDF2F7)
 
-    var progress by remember { mutableFloatStateOf(0f) }
+    val progress by viewModel.progress.collectAsStateWithLifecycle()
     val pct = (progress * 100).toInt()
 
-    LaunchedEffect(Unit) {
-        while (true) {
-            if (progress >= 1f) progress = 0f
-            delay(60)
-            progress = (progress + 0.01f).coerceAtMost(1f)
-        }
+    LifecycleResumeEffect(viewModel) {
+        viewModel.resumeProgress()
+        onPauseOrDispose { viewModel.pauseProgress() }
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")

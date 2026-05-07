@@ -29,7 +29,6 @@ class MemoriesStoryViewModel : ViewModel() {
 
     init {
         _uiState.value = MemoriesStoryUiState.Playing(slides = slides)
-        startProgress()
     }
 
     private fun startProgress() {
@@ -54,6 +53,15 @@ class MemoriesStoryViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    fun resumeProgress() {
+        startProgress()
+    }
+
+    fun pauseProgress() {
+        progressJob?.cancel()
+        progressJob = null
     }
 
     fun goToPrevious() {

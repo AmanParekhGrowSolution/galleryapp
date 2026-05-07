@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.galleryapp.data.repository.GalleryRepositoryImpl
 import com.example.galleryapp.domain.model.Photo
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,13 +34,15 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
     private val allPhotos = MutableStateFlow<List<Photo>>(emptyList())
     private val activeFilter = MutableStateFlow(PhotoFilter.All)
+    private var loadJob: Job? = null
 
     init {
-        loadPhotos()
+        refresh()
     }
 
-    private fun loadPhotos() {
-        viewModelScope.launch {
+    fun refresh() {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             repository.getPhotos().collect { photos ->
                 allPhotos.value = photos
                 applyFilterAndEmit(photos, activeFilter.value)

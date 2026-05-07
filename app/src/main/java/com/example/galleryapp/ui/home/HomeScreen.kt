@@ -7,6 +7,7 @@ import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -180,7 +181,7 @@ private fun HomeContent(
     val filters = PhotoFilter.entries
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(3),
+        columns = GridCells.Fixed(state.gridColumns),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -212,6 +213,8 @@ private fun HomeContent(
                     photo = photo,
                     isSelected = photo.id in state.selectedIds,
                     selectionMode = state.selectionMode,
+                    roundedThumbs = state.roundedThumbs,
+                    showVideoDuration = state.showVideoDuration,
                     onClick = {
                         if (state.selectionMode) onToggleSelection(photo.id)
                         else onPhotoClick(photo.id)
@@ -386,13 +389,20 @@ private fun PhotoThumbnailItem(
     photo: Photo,
     isSelected: Boolean,
     selectionMode: Boolean,
+    roundedThumbs: Boolean,
+    showVideoDuration: Boolean,
     onClick: () -> Unit
 ) {
+    val cornerRadius by animateDpAsState(
+        targetValue = if (roundedThumbs) 12.dp else 2.dp,
+        label = "thumbnailCornerRadius"
+    )
+
     Box(
         modifier = Modifier
             .aspectRatio(1f)
             .padding(1.dp)
-            .clip(RoundedCornerShape(2.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .background(Color(photo.placeholderColor))
             .clickable(onClick = onClick)
     ) {
@@ -404,6 +414,29 @@ private fun PhotoThumbnailItem(
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        if (showVideoDuration && photo.mimeType.startsWith("video/") && photo.duration > 0) {
+            val totalSeconds = photo.duration / 1000
+            val mm = totalSeconds / 60
+            val ss = totalSeconds % 60
+            val durationText = "%d:%02d".format(mm, ss)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Black.copy(alpha = 0.6f))
+                    .padding(horizontal = 4.dp, vertical = 2.dp)
+            ) {
+                Text(
+                    text = durationText,
+                    color = Color.White,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+
         if (selectionMode) {
             Box(
                 contentAlignment = Alignment.Center,

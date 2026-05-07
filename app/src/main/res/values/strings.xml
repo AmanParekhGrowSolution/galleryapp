@@ -301,7 +301,12 @@
     <string name="private_vault_sub">Locked locally with PIN</string>
     <string name="active">Active</string>
     <string name="system">System</string>
+    <string name="light">Light</string>
+    <string name="dark">Dark</string>
+    <string name="two_columns">2 columns</string>
+    <string name="three_columns">3 columns</string>
     <string name="four_columns">4 columns</string>
+    <string name="five_columns">5 columns</string>
     <string name="smart_cleaner">Smart Cleaner</string>
     <string name="smart_cleaner_sub">%1$s GB can be freed</string>
     <string name="recently_deleted_sub">%1$d items · auto-empty %2$dd</string>

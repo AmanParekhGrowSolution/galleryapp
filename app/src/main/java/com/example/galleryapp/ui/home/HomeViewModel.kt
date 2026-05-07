@@ -3,12 +3,14 @@ package com.example.galleryapp.ui.home
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.galleryapp.data.local.DisplayPreferences
 import com.example.galleryapp.data.repository.GalleryRepositoryImpl
 import com.example.galleryapp.domain.model.Photo
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -20,7 +22,10 @@ sealed interface HomeUiState {
         val sections: List<PhotoSection>,
         val selectedFilter: PhotoFilter,
         val selectionMode: Boolean,
-        val selectedIds: Set<Long>
+        val selectedIds: Set<Long>,
+        val gridColumns: Int = 3,
+        val roundedThumbs: Boolean = false,
+        val showVideoDuration: Boolean = true
     ) : HomeUiState
     data class Error(val message: String) : HomeUiState
 }
@@ -29,6 +34,8 @@ data class PhotoSection(val dateLabel: String, val photos: List<Photo>)
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = GalleryRepositoryImpl(application)
+    private val displayPrefs = DisplayPreferences.getInstance(application)
+
     private val _uiState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
@@ -37,6 +44,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private var loadJob: Job? = null
 
     init {
+        viewModelScope.launch {
+            combine(
+                displayPrefs.defaultGrid,
+                displayPrefs.roundedThumbnails,
+                displayPrefs.showVideoDuration
+            ) { gridPref, roundedThumbs, showVideoDuration ->
+                Triple(gridPref, roundedThumbs, showVideoDuration)
+            }.collect { (gridPref, roundedThumbs, showVideoDuration) ->
+                _uiState.update { current ->
+                    if (current is HomeUiState.Success) {
+                        current.copy(
+                            gridColumns = parseGridColumns(gridPref),
+                            roundedThumbs = roundedThumbs,
+                            showVideoDuration = showVideoDuration
+                        )
+                    } else current
+                }
+            }
+        }
         refresh()
     }
 
@@ -71,7 +97,10 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 sections = sections,
                 selectedFilter = filter,
                 selectionMode = (current as? HomeUiState.Success)?.selectionMode ?: false,
-                selectedIds = (current as? HomeUiState.Success)?.selectedIds ?: emptySet()
+                selectedIds = (current as? HomeUiState.Success)?.selectedIds ?: emptySet(),
+                gridColumns = parseGridColumns(displayPrefs.defaultGrid.value),
+                roundedThumbs = displayPrefs.roundedThumbnails.value,
+                showVideoDuration = displayPrefs.showVideoDuration.value
             )
         }
     }
@@ -96,6 +125,9 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             } else state
         }
     }
+
+    private fun parseGridColumns(gridPref: String): Int =
+        gridPref.filter { it.isDigit() }.toIntOrNull() ?: 3
 
     private fun groupByDate(photos: List<Photo>): List<PhotoSection> {
         val now = System.currentTimeMillis()

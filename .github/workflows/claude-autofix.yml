@@ -19,7 +19,7 @@ jobs:
     name: Auto-fix Review Violations
     if: "${{ github.event.label.name == 'review: blocked' }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 360
 
     concurrency:
       group: claude-autofix-pr-${{ github.event.pull_request.number }}

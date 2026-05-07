@@ -22,7 +22,7 @@ jobs:
   review:
     name: Claude Code Review
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v5
         with:
@@ -81,6 +81,7 @@ jobs:
             ## Steps
 
             1. Read `CLAUDE.md` at the repo root — it is the single source of truth for project rules.
+               Read `REVIEW.md` at the repo root — it defines severity calibration, nit cap, what NOT to report, and the required summary format.
 
             2. Run `gh pr diff ${{ github.event.pull_request.number }}` and **read the full diff**.
 
@@ -107,6 +108,25 @@ jobs:
             ---
 
             ### BLOCKING rules you must check (not covered by the linter)
+
+            **Dead click handlers & state machines — check EVERY PR**
+            For every `onClick`, `onDismiss`, `onConfirm`, `onLongClick`, `onValueChange`, or similar
+            handler in **changed Composables**:
+            1. Use the `Read` tool to open the ViewModel and read the handler function body.
+            2. If the function body is empty `{ }` → BLOCKING: "Dead click handler: `[function]` at [file:line]"
+            3. If it calls a function that is also empty → BLOCKING.
+            4. If it launches `viewModelScope.launch`:
+               - Must emit a `Loading` / loading state BEFORE the async call → BLOCKING if absent.
+               - Must emit BOTH a success state AND an error state via `try/catch` → BLOCKING if either is absent.
+            5. Only trace handlers that appear in the diff or are directly called by code in the diff.
+
+            **Navigation route validation — check EVERY PR**
+            For every `navigate(route)`, `navController.navigate(...)`, or destination reference in the diff:
+            1. Use `Grep` to find the NavHost definition file.
+            2. Read the NavHost and verify the destination route/object is registered in the NavGraph.
+            3. Verify argument types at the call site match the destination definition.
+            4. BLOCKING if route is not registered: "Unregistered navigation destination: `[route]` at [file:line]"
+            5. BLOCKING if argument type mismatch detected.
 
             **Architecture (Section 3)**
             - ViewModels must NOT hold an Activity/Fragment `Context` reference.
@@ -159,10 +179,12 @@ jobs:
             6. Post inline comments for line-specific issues using the `mcp__github_inline_comment__create_inline_comment` tool.
             7. Post one structured top-level summary comment via:
                `gh pr comment ${{ github.event.pull_request.number }} --body "..."`
+               Use the exact format specified in `REVIEW.md` (Summary Comment Format section).
                Structure:
-               - ✅ **Passed checks** — list what was verified and passed
-               - ❌ **Blocking violations** — include ALL linter `[BLOCKING]` lines verbatim, then add any architecture/security/accessibility violations you found
-               - ⚠️ **Advisory notes** — include ALL linter `[ADVISORY]` lines verbatim, then add advisory judgment-call findings
+               - Verdict line first: `**Verdict: ✅ PASSED**` or `**Verdict: ❌ BLOCKED**`
+               - ❌ **Blocking violations** — include ALL linter `[BLOCKING]` lines verbatim, then any architecture/security/accessibility/handler/navigation violations you found
+               - ⚠️ **Advisory notes** (capped at 5 nits per REVIEW.md) — include ALL linter `[ADVISORY]` lines verbatim, then advisory judgment-call findings
+               - ✅ **Checks passed** — explicitly confirm: dead click handlers verified, navigation routes verified, state machines verified, architecture, security, accessibility
                - 📁 **Files reviewed** — list all changed files examined
             8. **Apply a verdict label — this gates the merge:**
                First remove any prior verdict:

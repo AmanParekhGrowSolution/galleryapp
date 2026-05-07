@@ -20,7 +20,7 @@ jobs:
       cancel-in-progress: true
 
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 360
 
     permissions:
       contents: write
@@ -159,7 +159,7 @@ jobs:
           claude_args: >-
             --model claude-opus-4-7
             --effort high
-            --max-turns 25
+            --max-turns 100
             --permission-mode bypassPermissions
             --allowedTools "Bash Read Grep Glob"
             --debug-file ${{ runner.temp }}/claude-debug-p1.json
@@ -294,7 +294,7 @@ jobs:
           claude_args: >-
             --model claude-sonnet-4-6
             --effort high
-            --max-turns 50
+            --max-turns 100
             --permission-mode bypassPermissions
             --allowedTools "Bash Read Edit Write Grep Glob"
             --debug-file ${{ runner.temp }}/claude-debug-p2.json
@@ -406,7 +406,7 @@ jobs:
             claude \
               --model claude-sonnet-4-6 \
               --allowedTools "Read Edit Write Bash Grep Glob" \
-              --max-turns 20 \
+              --max-turns 100 \
               --permission-mode bypassPermissions \
               -p "Fix the build, test, or lint failures in the Android project.
 
@@ -462,7 +462,7 @@ jobs:
             claude \
               --model claude-sonnet-4-6 \
               --allowedTools "Read Edit Write Grep Glob Bash" \
-              --max-turns 20 \
+              --max-turns 100 \
               --permission-mode bypassPermissions \
               -p "Fix ONLY the [BLOCKING] CLAUDE.md violations.
 
@@ -515,7 +515,7 @@ jobs:
           claude_args: >-
             --model claude-sonnet-4-6
             --effort high
-            --max-turns 15
+            --max-turns 100
             --permission-mode bypassPermissions
             --allowedTools "Bash"
             --debug-file ${{ runner.temp }}/claude-debug-p5.json

@@ -19,7 +19,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -46,9 +52,15 @@ fun SplashScreen(
     onNavigateToMain: () -> Unit,
     isFirstRun: Boolean = false
 ) {
+    var navigated by rememberSaveable { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     LaunchedEffect(Unit) {
         delay(2000)
-        if (isFirstRun) onNavigateToOnboarding() else onNavigateToMain()
+        if (!navigated && lifecycleOwner.lifecycle.currentState >= Lifecycle.State.STARTED) {
+            navigated = true
+            if (isFirstRun) onNavigateToOnboarding() else onNavigateToMain()
+        }
     }
 
     Box(

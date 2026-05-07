@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.galleryapp.data.repository.GalleryRepositoryImpl
 import com.example.galleryapp.domain.model.Photo
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,6 +24,8 @@ class SearchViewModel : ViewModel() {
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
 
+    private var searchJob: Job? = null
+
     fun onQueryChange(q: String) {
         _query.update { q }
         if (q.isBlank()) {
@@ -33,7 +36,8 @@ class SearchViewModel : ViewModel() {
     }
 
     private fun search(query: String) {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             repository.getPhotos().collect { photos ->
                 val results = photos.filter {
                     it.displayName.contains(query, ignoreCase = true)

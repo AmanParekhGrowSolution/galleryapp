@@ -25,10 +25,9 @@ class SlideshowViewModel : ViewModel() {
 
     init {
         _uiState.value = SlideshowUiState.Playing(photoColors = photoColors)
-        startAutoAdvance()
     }
 
-    private fun startAutoAdvance() {
+    fun resumeAutoAdvance() {
         advanceJob?.cancel()
         advanceJob = viewModelScope.launch {
             while (true) {
@@ -40,6 +39,11 @@ class SlideshowViewModel : ViewModel() {
                 }
             }
         }
+    }
+
+    fun pauseAutoAdvance() {
+        advanceJob?.cancel()
+        advanceJob = null
     }
 
     fun togglePause() {

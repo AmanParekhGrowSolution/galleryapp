@@ -2,19 +2,25 @@ package com.example.galleryapp.ui.security
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.SavedStateHandle
 import com.example.galleryapp.data.local.PrefsManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class AppLockSetupViewModel(application: Application) : AndroidViewModel(application) {
+class AppLockSetupViewModel(
+    application: Application,
+    private val savedStateHandle: SavedStateHandle,
+) : AndroidViewModel(application) {
 
     private val prefs = PrefsManager.create(application)
     private val _uiState = MutableStateFlow<AppLockSetupUiState>(AppLockSetupUiState.PinEntry())
     val uiState: StateFlow<AppLockSetupUiState> = _uiState.asStateFlow()
 
-    private var firstPin: String = ""
+    private var firstPin: String
+        get() = savedStateHandle["first_pin"] ?: ""
+        set(value) { savedStateHandle["first_pin"] = value }
 
     fun enterDigit(digit: Int) {
         _uiState.update { state ->

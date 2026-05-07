@@ -36,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -48,8 +49,11 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.galleryapp.R
 import com.example.galleryapp.domain.model.Photo
 import com.example.galleryapp.ui.theme.BrandBlue
@@ -84,6 +88,11 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LifecycleResumeEffect(Unit) {
+        viewModel.refresh()
+        onPauseOrDispose { }
+    }
 
     Box(
         modifier = Modifier
@@ -340,6 +349,14 @@ private fun PhotoThumbnailItem(
             .background(Color(photo.placeholderColor))
             .clickable(onClick = onClick)
     ) {
+        if (photo.uri != null) {
+            AsyncImage(
+                model = photo.uri.toUri(),
+                contentDescription = photo.displayName,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
         if (selectionMode) {
             Box(
                 contentAlignment = Alignment.Center,

@@ -1,5 +1,12 @@
 package com.example.galleryapp.ui.home
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.provider.MediaStore
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.Modifier
@@ -42,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
@@ -49,6 +58,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -88,6 +98,37 @@ fun HomeScreen(
     viewModel: HomeViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val cameraUnavailableMsg = stringResource(R.string.camera_app_unavailable)
+    val cameraPermissionDeniedMsg = stringResource(R.string.camera_permission_denied)
+
+    val launchCameraIntent: () -> Unit = remember(context) {
+        {
+            val intent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
+            if (intent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(intent)
+            } else {
+                Toast.makeText(context, cameraUnavailableMsg, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) launchCameraIntent()
+        else Toast.makeText(context, cameraPermissionDeniedMsg, Toast.LENGTH_SHORT).show()
+    }
+
+    val onCameraClick: () -> Unit = remember(context, cameraPermissionLauncher) {
+        {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                launchCameraIntent()
+            } else {
+                cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+            }
+        }
+    }
 
     LifecycleResumeEffect(Unit) {
         viewModel.refresh()
@@ -108,6 +149,7 @@ fun HomeScreen(
                 state = state,
                 onPhotoClick = onPhotoClick,
                 onVaultClick = onVaultClick,
+                onCameraClick = onCameraClick,
                 onSettingsClick = onSettingsClick,
                 onPremiumClick = onPremiumClick,
                 onSearchClick = onSearchClick,
@@ -128,6 +170,7 @@ private fun HomeContent(
     state: HomeUiState.Success,
     onPhotoClick: (Long) -> Unit,
     onVaultClick: () -> Unit,
+    onCameraClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onPremiumClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -157,7 +200,7 @@ private fun HomeContent(
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
-            QuickAccessRow(onVaultClick = onVaultClick)
+            QuickAccessRow(onCameraClick = onCameraClick, onVaultClick = onVaultClick)
         }
 
         state.sections.forEach { section ->
@@ -267,7 +310,7 @@ private fun FilterChipsRow(
 }
 
 @Composable
-private fun QuickAccessRow(onVaultClick: () -> Unit) {
+private fun QuickAccessRow(onCameraClick: () -> Unit = {}, onVaultClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,7 +319,11 @@ private fun QuickAccessRow(onVaultClick: () -> Unit) {
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         quickItems.forEachIndexed { index, item ->
-            val onClick = if (index == 3) onVaultClick else ({})
+            val onClick = when (index) {
+                1 -> onCameraClick
+                3 -> onVaultClick
+                else -> ({})
+            }
             QuickAccessItem(item = item, onClick = onClick)
         }
     }

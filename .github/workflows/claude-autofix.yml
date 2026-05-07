@@ -114,9 +114,9 @@ jobs:
       # ── 6. Run Claude to fix the violations ───────────────────────────────
       - name: Run Claude Auto-Fix
         if: steps.attempt_check.outputs.max_reached == 'false'
-        uses: anthropics/claude-code-action@v1
+        uses: ./.github/actions/claude-with-retry
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.AGENT_PAT }}
           show_full_output: true
           claude_args: >-

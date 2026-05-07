@@ -20,7 +20,7 @@ jobs:
       cancel-in-progress: true
 
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     permissions:
       contents: write
@@ -35,7 +35,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # ── 2. JDK (so Claude can run ./gradlew to verify its own code) ───────
+      # ── 2. JDK (Phases 3 & 4 run gradlew) ───────────────────────────────
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
@@ -66,21 +66,19 @@ jobs:
               body: [
                 '## 🤖 Claude Code Agent Activated',
                 '',
-                `Analysing **Issue #${{ github.event.issue.number }}** — implementing changes and opening a PR shortly.`,
+                `Analysing **Issue #${{ github.event.issue.number }}** — working through 5 phases.`,
                 '',
-                '| Step | Status |',
-                '|------|--------|',
-                '| Read codebase & plan | ⏳ |',
-                '| Implement changes    | ⏳ |',
-                '| Run build check      | ⏳ |',
-                '| Create PR            | ⏳ |',
-                '| Auto-merge (CI gate) | ⏳ |',
+                '| Phase | Status |',
+                '|-------|--------|',
+                '| 1 · Explore & Plan | ⏳ |',
+                '| 2 · Implement      | ⏳ |',
+                '| 3 · Build & Fix    | ⏳ |',
+                '| 4 · Compliance     | ⏳ |',
+                '| 5 · Open PR        | ⏳ |',
               ].join('\n'),
             });
 
-      # ── 4. Pre-extract issue attachments (zip / images / HTML) ─────────────
-      # Runs before the agent so every attachment is already on disk when the
-      # agent's prompt is evaluated. The agent reads the manifest and skips curl/unzip.
+      # ── 4. Pre-extract issue attachments ──────────────────────────────────
       - name: Pre-extract issue attachments
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -88,10 +86,6 @@ jobs:
           mkdir -p /tmp/issue-attachments
           MANIFEST=/tmp/issue-attachments/manifest.txt
 
-          # Extract attachment URLs from the issue body. Matches:
-          #   - user-attachments (drag-drop in web UI)
-          #   - release download assets (gh release upload)
-          #   - raw.githubusercontent.com refs
           printf '%s' "$ISSUE_BODY" \
             | grep -oE 'https://github\.com/user-attachments/(files|assets)/[^ )"<>]+|https://github\.com/[^/]+/[^/]+/releases/download/[^ )"<>]+|https://raw\.githubusercontent\.com/[^ )"<>]+' \
             > /tmp/attachment-urls.txt || true
@@ -108,19 +102,16 @@ jobs:
               echo "Downloading: $BASENAME"
               curl -fL --retry 2 -o "$DEST" "$URL" 2>/dev/null || { echo "WARN: failed to download $URL"; continue; }
 
-              # Unzip into a subdirectory named after the stem
               if [[ "$BASENAME" == *.zip ]]; then
                 STEM="${BASENAME%.zip}"
                 mkdir -p "/tmp/issue-attachments/$STEM"
                 unzip -o -q "$DEST" -d "/tmp/issue-attachments/$STEM/" || echo "WARN: unzip failed for $BASENAME"
-                # Add extracted files to manifest
                 find "/tmp/issue-attachments/$STEM" -type f \
                   | while read -r F; do
                       SIZE=$(stat -c%s "$F" 2>/dev/null || echo "?")
                       echo "zip-extracted  $SIZE  $F"
                     done >> "$MANIFEST"
               else
-                # Classify by extension
                 case "$BASENAME" in
                   *.png|*.jpg|*.jpeg|*.webp|*.svg) TYPE="image" ;;
                   *.html|*.htm) TYPE="html" ;;
@@ -138,10 +129,7 @@ jobs:
 
           echo "DESIGN_BUNDLE_DIR=/tmp/issue-attachments" >> "$GITHUB_ENV"
 
-      # ── 5. Pre-install Claude Code (workaround: upstream installer regression)
-      #         anthropics/claude-code-action#1290 — installer exits 0 without
-      #         placing the binary when ~/.local/bin doesn't exist. Remove once
-      #         Anthropic ships a fix and bumps the @v1 tag.
+      # ── 5. Pre-install Claude Code ────────────────────────────────────────
       - name: Pre-install Claude Code (workaround for upstream installer regression)
         shell: bash
         run: |
@@ -158,22 +146,27 @@ jobs:
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           "$HOME/.local/bin/claude" --version
 
-      # ── 5. Run Claude Code Agent (OAuth — no API key needed) ──────────────
-      - name: Run Claude Code Agent
-        uses: anthropics/claude-code-action@v1
+      # ═══════════════════════════════════════════════════════════════════════
+      # PHASE 1 — EXPLORE & PLAN
+      # Read-only. Outputs /tmp/phase1-plan.txt and posts plan as issue comment.
+      # ═══════════════════════════════════════════════════════════════════════
+      - name: "🔍 Phase 1 — Explore & Plan"
+        uses: ./.github/actions/claude-with-retry
         with:
-          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.AGENT_PAT }}
           show_full_output: true
           claude_args: >-
-            --model claude-sonnet-4-6
+            --model claude-opus-4-7
             --effort high
-            --max-turns 100
+            --max-turns 25
             --permission-mode bypassPermissions
-            --debug-file ${{ runner.temp }}/claude-debug.json
+            --allowedTools "Bash Read Grep Glob"
+            --debug-file ${{ runner.temp }}/claude-debug-p1.json
 
           prompt: |
-            You are an autonomous Android coding agent triggered by GitHub Issue #${{ github.event.issue.number }}.
+            You are in **EXPLORE & PLAN** mode for Issue #${{ github.event.issue.number }}.
+            **DO NOT edit or create any source files. Read and plan only.**
 
             ## Issue Details
             **Title:** ${{ github.event.issue.title }}
@@ -183,178 +176,420 @@ jobs:
             **Description:**
             ${{ github.event.issue.body }}
 
-            ## Available skills
+            ## Attachments (pre-extracted — do NOT re-curl or re-unzip)
+            Read `/tmp/issue-attachments/manifest.txt` first.
+            If it contains only `none`, there are no attachments.
 
-            This repo ships 35 project-local skills at `.claude/skills/`. Auto-invoke them via
-            the `Skill` tool whenever the issue matches. Key skills:
+            ## Available skills (invoke via Skill tool if available in this environment)
+            - `claude-design-to-android` — design zip / HTML bundle → Compose screens
+            - `android-ui-replicator` — screenshot/image → Kotlin + Compose
+            - `android-admob` — AdMob / ads / ca-app-pub- IDs
+            - `jetpack-compose` — Compose UI patterns and animation
+            - `mvi-architecture` — state management and UiState design
+            - `navigation-compose` — navigation graph changes
 
-            - **`claude-design-to-android`** — use when the issue provides a design file, ZIP of
-              screens, HTML mockup, or Figma export and asks to implement/replicate the UI in Compose.
-              Invoke this FIRST before any other step when a design reference is attached.
-            - **`android-ui-replicator`** — use when the issue includes a screenshot or design
-              reference and asks to replicate / clone / rebuild / convert a screen into Kotlin + XML.
-            - **`android-admob`** — use when the issue asks to add ads / monetize / integrate
-              AdMob / banner / interstitial / app-open / rewarded ads, or mentions a
-              `ca-app-pub-...` ID. The skill encodes the full Koin-DI wiring + Play Store
-              policy guardrails — do not hand-roll AdMob code.
-            - **`jetpack-compose`** — use for Compose UI patterns, animation, theming.
-            - **`mvi-architecture`** — use when the issue involves state management or architecture changes.
-            - **`navigation-compose`** — use when the issue touches navigation or deep linking.
+            If a skill matches this issue, invoke it now **in planning mode only** — use it to determine the approach, not to write code. Phase 2 does the implementation.
 
-            If a skill matches, invoke it BEFORE writing code — its workflow supersedes
-            the generic "Implement" step below for that subtask.
+            ## Steps
 
-            ## Issue attachments (PRE-EXTRACTED — read before coding)
+            1. **Read `CLAUDE.md`** at the repo root.
 
-            Before this step ran, the workflow downloaded every attachment URL from the
-            issue body and extracted every zip. **Do NOT re-curl or re-unzip.**
+            2. **Explore the codebase** — use Read, Grep, Glob, Bash to understand the relevant files, patterns, and conventions. Read 2–3 sibling screens before designing new UI.
 
-            - **Manifest:** `/tmp/issue-attachments/manifest.txt` — read this FIRST.
-              If it contains only `none`, there are no attachments; skip to the standard flow.
-            - **Extracted zip contents:** `/tmp/issue-attachments/<zip-stem>/`
-            - **Image attachments:** `/tmp/issue-attachments/*.{png,jpg,jpeg,webp,svg}`
-            - **HTML mockups:** `/tmp/issue-attachments/*.html`
+            3. **Read design files if present.** If the manifest lists design sources (`*.jsx`, `*.html`, `tokens.css`, `*.png`):
+               - Read them and extract concrete values: hex colours, screen names, asset filenames.
+               - Never invent hex codes — use only values found in the design source.
 
-            If the manifest lists any design source file (`*.jsx`, `*.html`, `tokens.css`,
-            `*.png`, `.design-canvas.state.json`), this is a **design-replication task** —
-            read "Design-replication mode" below before posting your plan.
-
-            ## Scope rules — STRICT (non-design issues only)
-
-            - Only modify files needed to satisfy the issue's stated acceptance criteria.
-            - **Never edit files under `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`, or top-level `build.gradle*`** unless the issue explicitly asks you to. Workflow and build configuration are off-limits.
-            - Do not "improve" or "fix" unrelated code you happen to read along the way. If something looks wrong but is out of scope, mention it in the PR description instead of changing it.
-
-            ## Design-replication mode (overrides STRICT scope)
-
-            Activated when `/tmp/issue-attachments/manifest.txt` lists design source files
-            (`*.jsx`, `*.html`, `tokens.css`, `*.png`, `.design-canvas.state.json`).
-
-            **You MUST:**
-            1. Add new files — at minimum update `Color.kt` / `Type.kt` with design tokens and
-               create one Compose screen per `screens-*.jsx` source in the bundle.
-               "Edit only existing files" is a **wrong** reading of a design-replication issue.
-            2. Post a plan comment that **quotes concrete values from the design source** —
-               at least 5 hex codes from `tokens.css`, the screen filenames you will replicate,
-               and the drawable filenames you will import.
-               Plans that say "no new Color parameters" or "no UiState change" while a design
-               bundle is present are **AUTOMATICALLY INVALID** — rewrite the plan before editing.
-            3. Read color values from `tokens.css` / `*.jsx` const declarations / inline
-               `style={{ color: "#..." }}`. **Never hand-invent hex codes** when the bundle
-               ships a palette.
-            4. Copy referenced PNGs from the bundle into `app/src/main/res/drawable/`.
-               Use the `extract_assets.py` script from the `claude-design-to-android` skill.
-
-            **Plan template in design-replication mode** (replaces the standard template below):
+            4. **Write a structured plan** to `/tmp/phase1-plan.txt` in EXACTLY this format (keep field names verbatim, one item per line under each field, write `NONE` if empty):
 
             ```
-            ## Implementation plan (pre-edit, design-replication)
-            **Design sources I read:** <paths under /tmp/issue-attachments/, with concrete values:
-              e.g. tokens.css → --bg=#0F172A, --primary=#4F46E5, screens-main.jsx → S01Home, S02Albums, …>
-            **Theme files I will CREATE or UPDATE:** Color.kt, Type.kt, Shapes.kt
-              — list every Color/TextStyle definition sourced verbatim from the design tokens.
-            **Compose screens I will CREATE:** <one entry per screens-*.jsx in the bundle>
-              — for each: the .jsx source file + target Kotlin path.
-            **Drawable assets I will COPY from the bundle:** <source path → res/drawable target>
-            **Existing screens I will UPDATE:** <list, or "none">
-            **Tests:** <list, or "deferred — design replication">
+            ISSUE_TYPE: fix|feature|design-replication
+            AFFECTED_FILES:
+            - <full path>
+            NEW_FILES:
+            - NONE
+            UI_SURFACES:
+            - NONE
+            COLOR_PARAMS:
+            - NONE
+            STATE_CHANGES:
+            - NONE
+            HARDCODED_GLYPHS:
+            - NONE
+            TEST_FILES:
+            - NONE
+            IMPLEMENTATION_NOTES:
+            <free text — approach, key patterns, gotchas>
             ```
 
-            For **image-only** attachments (manifest has `*.png`/`*.jpg` but no zip):
-            invoke the `android-ui-replicator` skill and pass the image paths from the manifest
-            as the design reference before writing any code.
+            For `design-replication` ISSUE_TYPE, add these fields after IMPLEMENTATION_NOTES:
+            ```
+            DESIGN_TOKENS:
+            - <name>: <hex or value verbatim from source>
+            SCREENS:
+            - <screens-*.jsx source> → <target Kotlin path>
+            DRAWABLE_ASSETS:
+            - <source path> → <res/drawable/target.png>
+            ```
 
-            The standard plan template and STRICT scope rules in "Instructions" below apply
-            only to non-design issues.
-
-            ## Instructions
-
-            1. **Explore** the codebase — use `find`, `cat`, `Read`, `Grep` to understand the structure and patterns.
-
-            2. **Plan — POST BEFORE EDITING.** Before any Edit/Write tool call, post a comment on issue #${{ github.event.issue.number }} with the following structure (use `gh issue comment ${{ github.event.issue.number }} --body "..."`):
-
+            5. **Post the plan as an issue comment** — Phase 2 starts automatically after:
                ```
-               ## Implementation plan (pre-edit)
-               **Files I will modify:** <full list with paths>
-               **Every UI surface I will create or touch:** <enumerate every Box / Card / Surface / Row / Column that will receive a .background(...) — INCLUDE nested decorative surfaces: drag handles, pills, badges, dividers, chips, tab indicators. These are the surfaces that autofix loops keep missing.>
-               **Every Color parameter I will thread:** <e.g. `color: Color` passed parent->child, `tint: Color` threaded through helpers — list every Color param crossing a composable boundary so the `color = color` violation pattern is caught before it compiles>
-               **State-shape changes:** <UiState fields added/renamed/removed; downstream ViewModel + Test files that must update in the same PR>
-               **Hardcoded glyphs / separators:** <none, OR: list with the strings.xml key each will become>
-               **Tests I will add or update:** <full file list>
+               gh issue comment ${{ github.event.issue.number }} --body "## 📋 Implementation Plan
+
+            $(cat /tmp/phase1-plan.txt)
+
+            ---
+            _Phase 2 (implementation) starting automatically._"
                ```
 
-               The plan must be concrete — "Update UI" or "fix all violations" is not acceptable. If implementation reveals the plan was wrong, update the comment before continuing.
+            ## Scope rules
+            - Only plan files needed to satisfy the issue's stated acceptance criteria.
+            - Never plan edits to `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`, or top-level `build.gradle*`.
+            - Do NOT create branches, commits, or PRs. Phase 5 handles that.
+            - Do NOT run `./gradlew`. Phase 3 handles that.
 
-            3. **Read `CLAUDE.md`** at the repo root — it contains the mandatory architecture, accessibility, and security rules you MUST follow.
+      # ── Validate plan & export state to subsequent phases ─────────────────
+      - name: Validate plan & export to env
+        run: |
+          if [ ! -f /tmp/phase1-plan.txt ]; then
+            echo "::error::Phase 1 did not produce /tmp/phase1-plan.txt — aborting."
+            exit 1
+          fi
 
-            4. **Implement** the ${{ contains(github.event.label.name, 'fix') && 'bug fix' || 'feature' }}:
-               - Follow MVVM: ViewModel → UiState sealed class → stateless composables
-               - Write unit tests for any new ViewModel or Repository logic
-               - Add `contentDescription` to every Icon and Image
-               - No `!!` operators
+          echo "=== Phase 1 plan ==="
+          cat /tmp/phase1-plan.txt
+          echo "===================="
 
-            5. **Verify** — run `./gradlew assembleDebug` and fix any compile errors. Then run `./gradlew test`.
+          for FIELD in ISSUE_TYPE AFFECTED_FILES IMPLEMENTATION_NOTES; do
+            if ! grep -q "^${FIELD}:" /tmp/phase1-plan.txt; then
+              echo "::error::Plan is missing required field: ${FIELD}"
+              exit 1
+            fi
+          done
 
-            5a. **Self-critique against plan.** Run `git diff origin/main` and walk through every enumerated item in the plan comment:
-               - Does the diff contain the change? If not, why?
-               - Did your edits introduce any NEW Box/Card/Surface/Row/Column that was NOT in the enumeration? If yes, treat it as a plan miss — verify it is CLAUDE.md compliant, and update the plan comment.
-               - Did any `color`/`tint` parameter appear in the diff that was not listed in the plan? Trace the parameter end-to-end and verify the value at every call site.
-               Only proceed to step 5b once every diff item maps to a plan entry.
+          # Export plan for Phase 2 (multiline-safe heredoc pattern)
+          {
+            echo 'PLAN_CONTENT<<PLAN_EOF'
+            cat /tmp/phase1-plan.txt
+            echo 'PLAN_EOF'
+          } >> "$GITHUB_ENV"
 
-            5b. **Run the deterministic CLAUDE.md compliance linter** and fix every line it reports before opening the PR:
-                ```
-                bash scripts/check-claude-md.sh --diff origin/main
-                ```
-                **Do not push if this exits non-zero.** Common violations it catches:
-                - `[A1]` `IconButton` touch target < 48 dp
-                - `[S2]` single-char hardcoded separator like `Text(":")` — move to `strings.xml`
-                - `[ARCH2]` `.collectAsState()` — must be `.collectAsStateWithLifecycle()`
-                - `[SEC1]` cleartext `http://` URL — use HTTPS
-                - `[SEC2]` hardcoded credential/API key — use environment variable or Android Keystore
+          # Export ISSUE_TYPE for Phase 5 branch naming
+          ISSUE_TYPE=$(grep '^ISSUE_TYPE:' /tmp/phase1-plan.txt | awk '{print $2}' | tr -d '[:space:]')
+          echo "ISSUE_TYPE=${ISSUE_TYPE}" >> "$GITHUB_ENV"
 
-            6. **Create a branch** named:
-               `claude/${{ contains(github.event.label.name, 'fix') && 'fix' || 'feat' }}-issue-${{ github.event.issue.number }}-<short-description>`
+          echo "✅ Plan validated — ISSUE_TYPE=${ISSUE_TYPE}"
 
-            7. **Commit** all changes with message:
-               `${{ contains(github.event.label.name, 'fix') && 'fix' || 'feat' }}: <description> (#${{ github.event.issue.number }})`
+      # ═══════════════════════════════════════════════════════════════════════
+      # PHASE 2 — IMPLEMENT
+      # Full edit access. Executes the plan only.
+      # Does NOT run gradlew, does NOT create branches or commits.
+      # ═══════════════════════════════════════════════════════════════════════
+      - name: "⚙️ Phase 2 — Implement"
+        uses: ./.github/actions/claude-with-retry
+        with:
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          show_full_output: true
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 50
+            --permission-mode bypassPermissions
+            --allowedTools "Bash Read Edit Write Grep Glob"
+            --debug-file ${{ runner.temp }}/claude-debug-p2.json
 
-            8. **Open a PR** targeting `main` with:
-               - Title matching the commit message
-               - Body with: Summary, list of changed files, testing notes
+          prompt: |
+            You are in **IMPLEMENT** mode for Issue #${{ github.event.issue.number }}.
+
+            ## Plan from Phase 1
+            ${{ env.PLAN_CONTENT }}
+
+            ## Issue Details
+            **Title:** ${{ github.event.issue.title }}
+            **Label:** ${{ github.event.label.name }}
+
+            **Description:**
+            ${{ github.event.issue.body }}
+
+            ## Attachments (pre-extracted — do NOT re-curl or re-unzip)
+            Manifest: `/tmp/issue-attachments/manifest.txt`
+
+            ## Available skills (invoke via Skill tool if available in this environment)
+            - `claude-design-to-android` — design zip / HTML bundle → Compose
+            - `android-ui-replicator` — image-only attachments → Kotlin + Compose
+            - `android-admob` — AdMob / ads / ca-app-pub- IDs
+            - `jetpack-compose` — Compose UI patterns
+            - `mvi-architecture` — state management
+            - `navigation-compose` — navigation changes
+
+            If a skill matches, invoke it **BEFORE writing code** — its workflow supersedes generic implementation for that subtask.
+
+            ## Implementation rules
+
+            1. **Read `CLAUDE.md`** at the repo root before writing any code.
+            2. Implement **only** the files listed in `AFFECTED_FILES` and `NEW_FILES` from the plan above.
+            3. **Never edit** `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`, or top-level `build.gradle*`.
+            4. Follow MVVM — ViewModel exposes `StateFlow<UiState>`, screens collect with `collectAsStateWithLifecycle()`.
+            5. Add `contentDescription` to every `Icon` and `Image`.
+            6. No `!!` operators on values from external input, network, or user interaction.
+            7. User-visible UI strings (labels, buttons, error messages) → `strings.xml`. Internal constants and log tags → inline.
+            8. Wrap expensive calculations in `remember { }`. Supply `key =` to `items()` in `LazyColumn`/`LazyRow`.
+
+            ## Design-replication (when ISSUE_TYPE is `design-replication`)
+            - Read colour values from `DESIGN_TOKENS` in the plan — use verbatim, never invent hex codes.
+            - Create one Compose screen per entry in `SCREENS`.
+            - Copy drawable assets per `DRAWABLE_ASSETS` using the `extract_assets.py` script if available from the `claude-design-to-android` skill.
+
+            ## Constraints
+            - Do **NOT** run `./gradlew`. Phase 3 verifies the build.
+            - Do **NOT** create branches, commits, or PRs. Phase 5 handles Git.
+
+      # ═══════════════════════════════════════════════════════════════════════
+      # PHASE 3 — BUILD VERIFY + AUTO-FIX LOOP
+      # Mirrors android-ci.yml exactly: assembleDebug --stacktrace, test, lint.
+      # Claude reads /tmp/build.log directly via its Read tool.
+      # Up to 3 fix attempts before failing with an issue comment.
+      # ═══════════════════════════════════════════════════════════════════════
+      - name: "🔨 Phase 3 — Build verify & auto-fix"
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          set -euo pipefail
+          MAX_ATTEMPTS=3
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "::group::Build attempt $attempt / $MAX_ATTEMPTS"
+            set +e
+            ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build.log
+            BUILD_EXIT=${PIPESTATUS[0]}
+            if [ $BUILD_EXIT -eq 0 ]; then
+              ./gradlew test --no-daemon 2>&1 | tee -a /tmp/build.log
+              TEST_EXIT=${PIPESTATUS[0]}
+            else
+              TEST_EXIT=1
+            fi
+            if [ $TEST_EXIT -eq 0 ]; then
+              ./gradlew lint --no-daemon 2>&1 | tee -a /tmp/build.log
+              LINT_EXIT=${PIPESTATUS[0]}
+            else
+              LINT_EXIT=1
+            fi
+            set -e
+            echo "::endgroup::"
+
+            if [ $BUILD_EXIT -eq 0 ] && [ $TEST_EXIT -eq 0 ] && [ $LINT_EXIT -eq 0 ]; then
+              echo "✅ Build, tests, and lint all passed on attempt $attempt"
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+              echo "::error::Build/tests/lint still failing after $MAX_ATTEMPTS fix attempts"
+              FAIL_SNIPPET=$(tail -80 /tmp/build.log | sed "s/\`/'/g")
+              gh issue comment ${{ github.event.issue.number }} \
+                --body "## ⚠️ Phase 3 Failed — Build could not be fixed in $MAX_ATTEMPTS attempts
+
+          Claude tried $MAX_ATTEMPTS times to fix the build/tests/lint but was unable to. Manual intervention required.
+
+          **Last build log (tail 80 lines):**
+          \`\`\`
+          ${FAIL_SNIPPET}
+          \`\`\`
+
+          [View full Actions log](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+              exit 1
+            fi
+
+            echo "Build/test/lint failed on attempt $attempt — invoking Claude fix..."
+
+            claude \
+              --model claude-sonnet-4-6 \
+              --allowedTools "Read Edit Write Bash Grep Glob" \
+              --max-turns 20 \
+              --permission-mode bypassPermissions \
+              -p "Fix the build, test, or lint failures in the Android project.
+
+            Read /tmp/build.log to see what failed (the full output is in that file).
+
+            Rules:
+            - Only edit source files under app/src/. Do NOT edit .github/, gradle/, gradle.properties, settings.gradle*, or top-level build.gradle*.
+            - Do NOT suppress lint rules or add @Suppress / lintOptions disable entries — fix the underlying code.
+            - Do NOT add @Ignore or comment out failing tests — fix the test or fix the production code.
+            - Do NOT run gradlew — the CI loop will verify after you finish.
+
+            Fix attempt $attempt of $MAX_ATTEMPTS."
+          done
+
+      # ═══════════════════════════════════════════════════════════════════════
+      # PHASE 4 — COMPLIANCE CHECK + AUTO-FIX LOOP
+      # Runs check-claude-md.sh. Feeds only [BLOCKING] lines to Claude.
+      # After each fix, re-runs all 3 gradle commands to catch regressions.
+      # Up to 2 fix attempts before failing.
+      # ═══════════════════════════════════════════════════════════════════════
+      - name: "🔍 Phase 4 — Compliance check & fix"
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          set -euo pipefail
+          MAX_ATTEMPTS=2
+
+          for attempt in $(seq 1 $MAX_ATTEMPTS); do
+            echo "::group::Compliance check attempt $attempt / $MAX_ATTEMPTS"
+            set +e
+            bash scripts/check-claude-md.sh --diff origin/main > /tmp/lint.log 2>&1
+            LINT_EXIT=$?
+            set -e
+            cat /tmp/lint.log
+            echo "::endgroup::"
+
+            if [ $LINT_EXIT -eq 0 ]; then
+              echo "✅ Compliance passed on attempt $attempt"
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+              echo "::error::BLOCKING compliance violations remain after $MAX_ATTEMPTS fix attempts"
+              exit 1
+            fi
+
+            echo "Compliance violations found on attempt $attempt — invoking Claude fix..."
+
+            # Write blocking-only lines to a separate file so Claude gets a focused view
+            grep '\[BLOCKING\]' /tmp/lint.log > /tmp/blocking.log || echo "(no BLOCKING lines found by grep — check full lint.log)" > /tmp/blocking.log
+
+            claude \
+              --model claude-sonnet-4-6 \
+              --allowedTools "Read Edit Write Grep Glob Bash" \
+              --max-turns 20 \
+              --permission-mode bypassPermissions \
+              -p "Fix ONLY the [BLOCKING] CLAUDE.md violations.
+
+            Read /tmp/blocking.log for the list of blocking violations.
+            Read /tmp/lint.log for the full compliance output if you need more context.
+
+            Rules:
+            - Fix ALL [BLOCKING] violations by doing a rule-class sweep: for each violation type (e.g. SEC1 cleartext URL, ARCH2 collectAsState, A1 touch target), grep ALL files changed in this PR diff for every other instance of the same rule class and fix them all — not just the flagged lines.
+            - Do NOT fix [ADVISORY] violations in this pass.
+            - Do NOT edit .github/, gradle/, gradle.properties, settings.gradle*, or top-level build.gradle*.
+            - Do NOT suppress the rule (no @Suppress, no lint disable comments, no abortOnError = false) — fix the underlying code.
+            - Do NOT run gradlew — the loop will re-verify after you finish.
+
+            Fix attempt $attempt of $MAX_ATTEMPTS."
+
+            # Re-verify build after compliance fix to catch any regressions introduced
+            echo "::group::Re-verify build after compliance fix"
+            set +e
+            ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee /tmp/build-recheck.log
+            B=${PIPESTATUS[0]}
+            ./gradlew test --no-daemon 2>&1 | tee -a /tmp/build-recheck.log
+            T=${PIPESTATUS[0]}
+            ./gradlew lint --no-daemon 2>&1 | tee -a /tmp/build-recheck.log
+            L=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+
+            if [ $B -ne 0 ] || [ $T -ne 0 ] || [ $L -ne 0 ]; then
+              echo "::error::Compliance fix introduced a build/test/lint regression — failing Phase 4"
+              exit 1
+            fi
+          done
+
+      # ── Configure git identity before Phase 5 ────────────────────────────
+      - name: Configure git identity
+        run: |
+          git config user.name  "claude-agent[bot]"
+          git config user.email "claude-agent@users.noreply.github.com"
+
+      # ═══════════════════════════════════════════════════════════════════════
+      # PHASE 5 — BRANCH + PR
+      # Bash-only. Creates branch, commits, pushes, opens PR, enables auto-merge.
+      # ═══════════════════════════════════════════════════════════════════════
+      - name: "🚀 Phase 5 — Create branch & open PR"
+        uses: ./.github/actions/claude-with-retry
+        with:
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          show_full_output: true
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 15
+            --permission-mode bypassPermissions
+            --allowedTools "Bash"
+            --debug-file ${{ runner.temp }}/claude-debug-p5.json
+
+          prompt: |
+            You are in **BRANCH & PR** mode for Issue #${{ github.event.issue.number }}.
+            Only use Bash (git and gh commands). Do NOT read or edit source files — the code is already written.
+
+            ## Context
+            Issue title: ${{ github.event.issue.title }}
+            ISSUE_TYPE: ${{ env.ISSUE_TYPE }}
+
+            ## Steps
+
+            1. **Create branch:**
+               - If ISSUE_TYPE is `fix`: `git checkout -b claude/fix-issue-${{ github.event.issue.number }}-<3-word-slug>`
+               - Otherwise: `git checkout -b claude/feat-issue-${{ github.event.issue.number }}-<3-word-slug>`
+               - The slug must be kebab-case, derived from the issue title.
+
+            2. **Commit all changes:**
+               ```
+               git add -A
+               git commit -m "<fix|feat>: ${{ github.event.issue.title }} (#${{ github.event.issue.number }})"
+               ```
+               Use `fix:` if ISSUE_TYPE is `fix`, otherwise `feat:`.
+
+            3. **Push:**
+               ```
+               git push -u origin HEAD
+               ```
+
+            4. **Open PR** targeting `main`:
+               ```
+               gh pr create \
+                 --title "<fix|feat>: ${{ github.event.issue.title }} (#${{ github.event.issue.number }})" \
+                 --body "..."
+               ```
+               PR body must include:
+               - `## Summary` — 2–3 bullet points describing what changed
+               - `## Changed files` — list of modified/created files
+               - `## Testing notes` — how to verify the change manually
                - Footer: `Closes #${{ github.event.issue.number }}`
 
-            9. **Comment on the issue** with the PR link.
+            5. **Enable auto-merge** (so it merges once all CI checks pass):
+               ```
+               gh pr merge <PR_NUMBER> --auto --squash --delete-branch
+               ```
 
-            10. **Enable auto-merge** on the PR you just opened:
-               `gh pr merge <PR_URL_OR_NUMBER> --auto --squash --delete-branch`
-               This queues the PR to merge automatically once all CI checks pass.
+            6. **Comment on the issue** with the PR link:
+               ```
+               gh issue comment ${{ github.event.issue.number }} --body "🚀 PR opened: <PR_URL>"
+               ```
 
-            If the scope is unclear, comment on the issue asking for clarification — do NOT create a PR with guesswork.
-
-      # ── 5. Upload Claude debug log ────────────────────────────────────────────
-      - name: Upload Claude debug log
+      # ── Upload Claude debug logs (all phases) ────────────────────────────
+      - name: Upload Claude debug logs
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: claude-debug-agent-${{ github.event.issue.number }}-run${{ github.run_id }}
-          path: ${{ runner.temp }}/claude-debug.json
+          path: ${{ runner.temp }}/claude-debug-p*.json
           if-no-files-found: ignore
           retention-days: 14
 
-      # ── 6. Deterministic CLAUDE.md compliance gate ───────────────────────────
-      # Catches architecture/security/accessibility/separator violations that the
-      # LLM may have missed. Fails the workflow before the PR is opened, so the
-      # agent must address every match rather than pushing a violating branch.
-      - name: Verify CLAUDE.md compliance (deterministic)
+      # ── Final deterministic compliance gate ──────────────────────────────
+      - name: Verify CLAUDE.md compliance (final gate)
         if: success()
         run: |
           bash scripts/check-claude-md.sh --diff origin/main \
             || {
-              echo "::error::Deterministic linter found BLOCKING violations in the agent's changes (A1, S2, ARCH1-2, SEC1-SEC10). Review the output above and fix all [BLOCKING] lines before opening a PR. [ADVISORY] lines (P1-P3, LC1-LC3, PRIV1-2) are informational only."
+              echo "::error::Deterministic linter found BLOCKING violations after all phases (A1, S2, ARCH1-2, SEC1-SEC10). Review the output above and fix manually. [ADVISORY] lines (P1-P3, LC1-LC3, PRIV1-2) are informational only."
               exit 1
             }
 
-      # ── 6. Add "implemented" label (fallback) ─────────────────────────────
+      # ── Add "implemented" label ───────────────────────────────────────────
       - name: Add implemented label
         if: success()
         uses: actions/github-script@v8
@@ -369,7 +604,7 @@ jobs:
               });
             } catch (e) { console.log(e.message); }
 
-      # ── 6. Post failure comment ───────────────────────────────────────────
+      # ── Post failure comment ──────────────────────────────────────────────
       - name: Post failure comment
         if: failure()
         uses: actions/github-script@v8

@@ -15,11 +15,12 @@ paths:
 | `SLACK_WEBHOOK_URL`     | rollback.yml                    | APK delivery notifications           |
 
 ### Claude Code Action setup
-- Action: `anthropics/claude-code-action@v1`
+- Action: `anthropics/claude-code-action@v1` — invoked via `./.github/actions/claude-with-retry` wrapper
+- Wrapper: `.github/actions/claude-with-retry/action.yml` auto-retries up to 2× on `Output blocked by content filtering policy`; fails fast on any other error
 - Model: `claude-sonnet-4-6`
-- Auth: `claude_code_oauth_token` (OAuth) — do NOT switch to API key
+- Auth: `oauth_token` input (maps to `CLAUDE_CODE_OAUTH_TOKEN` secret) — do NOT switch to API key
 - Always pass `--permission-mode bypassPermissions` so the agent is not blocked mid-run
-- Always pass `--debug-file ${{ runner.temp }}/claude-debug.json` and upload as an artifact
+- Always pass `--debug-file ${{ runner.temp }}/claude-debug.json` (required by the retry wrapper for filter detection) and upload as an artifact
 
 ### Skills available to CI agents
 Project-local skills at `.claude/skills/` are auto-available to any `claude-code-action` run:

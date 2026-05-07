@@ -1,0 +1,99 @@
+name: Claude Code Agent (content-filter retry)
+description: >-
+  Wraps anthropics/claude-code-action@v1 with up to 2 automatic retries on
+  "Output blocked by content filtering policy". All other failures are
+  propagated immediately (fail-fast preserved).
+
+inputs:
+  oauth_token:
+    description: Claude Code OAuth token (CLAUDE_CODE_OAUTH_TOKEN secret)
+    required: true
+  github_token:
+    description: GitHub token for PR / issue operations
+    required: true
+  prompt:
+    description: Prompt to pass to the Claude agent
+    required: true
+  claude_args:
+    description: >-
+      CLI arguments for the Claude agent (must include --debug-file so the
+      content-filter detection step can read the debug JSON)
+    required: true
+  show_full_output:
+    description: Whether to echo full Claude output to the runner log
+    required: false
+    default: "true"
+  debug_file:
+    description: >-
+      Absolute path to the debug JSON file — must match the --debug-file
+      value in claude_args so filter detection reads the right file.
+    required: false
+    default: "${{ runner.temp }}/claude-debug.json"
+
+runs:
+  using: composite
+  steps:
+    # ── Attempt 1 ──────────────────────────────────────────────────────────────
+    - id: a1
+      name: Run Claude Code Agent (attempt 1)
+      uses: anthropics/claude-code-action@v1
+      continue-on-error: true
+      with:
+        claude_code_oauth_token: ${{ inputs.oauth_token }}
+        github_token:            ${{ inputs.github_token }}
+        show_full_output:        ${{ inputs.show_full_output }}
+        claude_args:             ${{ inputs.claude_args }}
+        prompt:                  ${{ inputs.prompt }}
+
+    # ── Detect content-filter block after attempt 1 ────────────────────────────
+    - id: d1
+      name: Detect content-filter block (1)
+      if: steps.a1.outcome == 'failure'
+      shell: bash
+      run: |
+        if grep -q "Output blocked by content filtering policy" "${{ inputs.debug_file }}" 2>/dev/null; then
+          echo "blocked=true" >> "$GITHUB_OUTPUT"
+          echo "::warning::Content-filter block detected on attempt 1 — retrying automatically."
+        else
+          echo "::error::Non-content-filter failure on attempt 1 — not retrying."
+          exit 1
+        fi
+
+    # ── Attempt 2 ──────────────────────────────────────────────────────────────
+    - id: a2
+      name: Run Claude Code Agent (attempt 2 — content-filter retry)
+      if: steps.d1.outputs.blocked == 'true'
+      uses: anthropics/claude-code-action@v1
+      continue-on-error: true
+      with:
+        claude_code_oauth_token: ${{ inputs.oauth_token }}
+        github_token:            ${{ inputs.github_token }}
+        show_full_output:        ${{ inputs.show_full_output }}
+        claude_args:             ${{ inputs.claude_args }}
+        prompt:                  ${{ inputs.prompt }}
+
+    # ── Detect content-filter block after attempt 2 ────────────────────────────
+    - id: d2
+      name: Detect content-filter block (2)
+      if: steps.a2.outcome == 'failure'
+      shell: bash
+      run: |
+        if grep -q "Output blocked by content filtering policy" "${{ inputs.debug_file }}" 2>/dev/null; then
+          echo "blocked=true" >> "$GITHUB_OUTPUT"
+          echo "::warning::Content-filter block detected on attempt 2 — retrying once more (final attempt)."
+        else
+          echo "::error::Non-content-filter failure on attempt 2 — not retrying."
+          exit 1
+        fi
+
+    # ── Attempt 3 (final — no continue-on-error) ───────────────────────────────
+    - id: a3
+      name: Run Claude Code Agent (attempt 3 — final content-filter retry)
+      if: steps.d2.outputs.blocked == 'true'
+      uses: anthropics/claude-code-action@v1
+      with:
+        claude_code_oauth_token: ${{ inputs.oauth_token }}
+        github_token:            ${{ inputs.github_token }}
+        show_full_output:        ${{ inputs.show_full_output }}
+        claude_args:             ${{ inputs.claude_args }}
+        prompt:                  ${{ inputs.prompt }}

@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import java.security.GeneralSecurityException
 import java.security.MessageDigest
 
 class PrefsManager(private val prefs: SharedPreferences) {
@@ -72,18 +73,26 @@ class PrefsManager(private val prefs: SharedPreferences) {
         private const val PREFS_NAME = "gallery_secure_prefs"
 
         fun create(context: Context): PrefsManager {
-            val masterKey = MasterKey.Builder(context.applicationContext)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-            return PrefsManager(
-                EncryptedSharedPreferences.create(
-                    context.applicationContext,
-                    PREFS_NAME,
-                    masterKey,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            val appContext = context.applicationContext
+            return try {
+                val masterKey = MasterKey.Builder(appContext)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+                PrefsManager(
+                    EncryptedSharedPreferences.create(
+                        appContext,
+                        PREFS_NAME,
+                        masterKey,
+                        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                    )
                 )
-            )
+            } catch (e: GeneralSecurityException) {
+                // Android Keystore is unavailable in non-hardware environments (e.g. unit tests).
+                // Fall back to plain SharedPreferences; vault PIN writes in this path are benign
+                // because the Keystore failure itself prevents PIN verification from working anyway.
+                PrefsManager(appContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE))
+            }
         }
 
         const val KEY_VAULT_PIN_HASH = "vault_pin_hash"

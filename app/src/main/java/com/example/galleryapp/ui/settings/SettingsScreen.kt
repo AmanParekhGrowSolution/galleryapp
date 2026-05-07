@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Delete
@@ -23,10 +24,11 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ModeNight
 import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,6 +37,9 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +77,18 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val darkModeOptions = listOf(
+        "System" to stringResource(R.string.system),
+        "Light" to stringResource(R.string.light),
+        "Dark" to stringResource(R.string.dark)
+    )
+    val gridOptions = listOf(
+        "2 columns" to stringResource(R.string.two_columns),
+        "3 columns" to stringResource(R.string.three_columns),
+        "4 columns" to stringResource(R.string.four_columns),
+        "5 columns" to stringResource(R.string.five_columns)
+    )
 
     LazyColumn(
         modifier = Modifier
@@ -112,8 +129,8 @@ fun SettingsScreen(
                     iconColor = Color(0xFF4B9E5F),
                     label = stringResource(R.string.hide_app_icon),
                     subtitle = stringResource(R.string.hide_app_icon_sub),
-                    checked = false,
-                    onToggle = {}
+                    checked = uiState.hideAppIcon,
+                    onToggle = viewModel::toggleHideAppIcon
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsToggleRow(
@@ -164,24 +181,22 @@ fun SettingsScreen(
         item { SettingsGroupLabel(stringResource(R.string.display).uppercase()) }
         item {
             SettingsCard {
-                SettingsNavRow(
+                SettingsDropdownRow(
                     icon = Icons.Default.ModeNight,
                     iconColor = Color(0xFF5B4B9E),
                     label = stringResource(R.string.dark_mode),
-                    subtitle = null,
-                    value = uiState.darkMode,
-                    showChevron = false,
-                    onClick = {}
+                    selectedKey = uiState.darkMode,
+                    options = darkModeOptions,
+                    onOptionSelected = viewModel::setDarkMode
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
-                SettingsNavRow(
+                SettingsDropdownRow(
                     icon = Icons.Default.GridView,
                     iconColor = BrandBlue,
                     label = stringResource(R.string.default_grid),
-                    subtitle = null,
-                    value = uiState.defaultGrid,
-                    showChevron = false,
-                    onClick = {}
+                    selectedKey = uiState.defaultGrid,
+                    options = gridOptions,
+                    onOptionSelected = viewModel::setDefaultGrid
                 )
                 HorizontalDivider(modifier = Modifier.padding(start = 58.dp), color = Color(0xFFEEEEEE), thickness = 0.5.dp)
                 SettingsToggleRow(
@@ -301,6 +316,54 @@ private fun SettingsCard(content: @Composable () -> Unit) {
             .background(Color.White)
     ) {
         content()
+    }
+}
+
+@Composable
+private fun SettingsDropdownRow(
+    icon: ImageVector,
+    iconColor: Color,
+    label: String,
+    selectedKey: String,
+    options: List<Pair<String, String>>,
+    onOptionSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val displayLabel = options.firstOrNull { it.first == selectedKey }?.second ?: selectedKey
+    Box {
+        SettingsNavRow(
+            icon = icon,
+            iconColor = iconColor,
+            label = label,
+            subtitle = null,
+            value = displayLabel,
+            showChevron = false,
+            onClick = { expanded = true }
+        )
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            options.forEach { (key, optionLabel) ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel, fontSize = 14.sp) },
+                    onClick = {
+                        onOptionSelected(key)
+                        expanded = false
+                    },
+                    leadingIcon = if (key == selectedKey) {
+                        {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = BrandBlue,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    } else null
+                )
+            }
+        }
     }
 }
 

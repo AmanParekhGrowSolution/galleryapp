@@ -8,7 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.galleryapp.data.local.DisplayPreferences
 import com.example.galleryapp.ui.navigation.AppNavigation
 import com.example.galleryapp.ui.theme.GalleryappTheme
 
@@ -22,8 +26,16 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         if (savedInstanceState == null) requestMediaPermissionsIfNeeded()
+        val displayPrefs = DisplayPreferences.getInstance(this)
         setContent {
-            GalleryappTheme {
+            val darkModePref by displayPrefs.darkMode.collectAsStateWithLifecycle()
+            val systemInDark = isSystemInDarkTheme()
+            val isDark = when (darkModePref) {
+                "Light" -> false
+                "Dark" -> true
+                else -> systemInDark
+            }
+            GalleryappTheme(darkTheme = isDark) {
                 AppNavigation()
             }
         }

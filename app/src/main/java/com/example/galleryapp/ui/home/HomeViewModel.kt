@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class PhotoFilter { All, Videos, Screenshots, GIFs }
+enum class PhotoFilter { All, Videos, Screenshots, GIFs, Favorites, Recent }
 
 sealed interface HomeUiState {
     data object Loading : HomeUiState
@@ -90,6 +90,8 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                 it.displayName.contains("screenshot", ignoreCase = true)
             }
             PhotoFilter.GIFs -> photos.filter { it.mimeType == "image/gif" }
+            PhotoFilter.Favorites -> photos.filter { it.isFavorite }
+            PhotoFilter.Recent -> photos.sortedByDescending { it.dateTaken }
         }
         val sections = groupByDate(filtered)
         _uiState.update { current ->

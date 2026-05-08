@@ -24,17 +24,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +60,7 @@ private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
 fun VaultScreen(
     onBack: () -> Unit,
     onNeedsSetup: () -> Unit,
+    onNavigateToSettings: () -> Unit,
     viewModel: VaultViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -79,7 +84,8 @@ fun VaultScreen(
                 state = state,
                 onBack = onBack,
                 onLock = viewModel::lock,
-                onFilterSelect = viewModel::selectFilter
+                onFilterSelect = viewModel::selectFilter,
+                onNavigateToSettings = onNavigateToSettings
             )
         }
     }
@@ -243,16 +249,25 @@ private fun UnlockedVault(
     state: VaultUiState.Unlocked,
     onBack: () -> Unit,
     onLock: () -> Unit,
-    onFilterSelect: (String) -> Unit
+    onFilterSelect: (String) -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val filters = listOf("All", "Personal", "Documents", "Receipts")
+    var menuExpanded by remember { mutableStateOf(false) }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
-            UnlockedTopBar(onBack = onBack, onLock = onLock)
+            UnlockedTopBar(
+                onBack = onBack,
+                onLock = onLock,
+                onMoreClick = { menuExpanded = true },
+                menuExpanded = menuExpanded,
+                onMenuDismiss = { menuExpanded = false },
+                onSettings = onNavigateToSettings
+            )
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
             PrivacyNoticeCard()
@@ -289,7 +304,14 @@ private fun UnlockedVault(
 }
 
 @Composable
-private fun UnlockedTopBar(onBack: () -> Unit, onLock: () -> Unit) {
+private fun UnlockedTopBar(
+    onBack: () -> Unit,
+    onLock: () -> Unit,
+    onMoreClick: () -> Unit,
+    menuExpanded: Boolean,
+    onMenuDismiss: () -> Unit,
+    onSettings: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -304,8 +326,17 @@ private fun UnlockedTopBar(onBack: () -> Unit, onLock: () -> Unit) {
             Text(stringResource(R.string.vault_title), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.auto_locks), color = Color.White.copy(alpha = 0.87f), fontSize = 11.sp)
         }
-        IconButton(onClick = {}) { Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add), tint = Color.White) }
-        IconButton(onClick = {}) { Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = Color.White) }
+        Box {
+            IconButton(onClick = onMoreClick) {
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = Color.White)
+            }
+            DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuDismiss) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.settings_title)) },
+                    onClick = { onSettings(); onMenuDismiss() }
+                )
+            }
+        }
     }
 }
 

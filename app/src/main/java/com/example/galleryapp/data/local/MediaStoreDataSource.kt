@@ -120,6 +120,93 @@ class MediaStoreDataSource(private val context: Context) {
         return results
     }
 
+    suspend fun getPhotoById(id: Long): Photo? = withContext(Dispatchers.IO) {
+        val imageCollection: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        }
+        val imageProjection = arrayOf(
+            MediaStore.MediaColumns._ID,
+            MediaStore.MediaColumns.DISPLAY_NAME,
+            MediaStore.MediaColumns.DATE_TAKEN,
+            MediaStore.MediaColumns.SIZE,
+            MediaStore.MediaColumns.MIME_TYPE,
+            MediaStore.MediaColumns.WIDTH,
+            MediaStore.MediaColumns.HEIGHT
+        )
+        val selection = "${MediaStore.MediaColumns._ID} = ?"
+        val selectionArgs = arrayOf(id.toString())
+
+        context.contentResolver.query(imageCollection, imageProjection, selection, selectionArgs, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                    val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                    val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+                    val widthCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.WIDTH)
+                    val heightCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.HEIGHT)
+                    return@withContext Photo(
+                        id = cursor.getLong(idCol),
+                        displayName = cursor.getString(nameCol) ?: "",
+                        dateTaken = cursor.getLong(dateCol),
+                        size = cursor.getLong(sizeCol),
+                        mimeType = cursor.getString(mimeCol) ?: "image/jpeg",
+                        placeholderColor = 0xFF1E3A5FL,
+                        width = cursor.getInt(widthCol),
+                        height = cursor.getInt(heightCol),
+                        uri = Uri.withAppendedPath(imageCollection, cursor.getLong(idCol).toString()).toString()
+                    )
+                }
+            }
+
+        val videoCollection: Uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Video.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        }
+        val videoProjection = arrayOf(
+            MediaStore.MediaColumns._ID,
+            MediaStore.MediaColumns.DISPLAY_NAME,
+            MediaStore.MediaColumns.DATE_TAKEN,
+            MediaStore.MediaColumns.SIZE,
+            MediaStore.MediaColumns.MIME_TYPE,
+            MediaStore.MediaColumns.WIDTH,
+            MediaStore.MediaColumns.HEIGHT,
+            MediaStore.Video.Media.DURATION
+        )
+
+        context.contentResolver.query(videoCollection, videoProjection, selection, selectionArgs, null)
+            ?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
+                    val nameCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
+                    val dateCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_TAKEN)
+                    val sizeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.SIZE)
+                    val mimeCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
+                    val widthCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.WIDTH)
+                    val heightCol = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.HEIGHT)
+                    val durationCol = cursor.getColumnIndex(MediaStore.Video.Media.DURATION)
+                    return@withContext Photo(
+                        id = cursor.getLong(idCol),
+                        displayName = cursor.getString(nameCol) ?: "",
+                        dateTaken = cursor.getLong(dateCol),
+                        size = cursor.getLong(sizeCol),
+                        mimeType = cursor.getString(mimeCol) ?: "video/mp4",
+                        placeholderColor = 0xFF1A3A5CL,
+                        width = cursor.getInt(widthCol),
+                        height = cursor.getInt(heightCol),
+                        duration = if (durationCol >= 0) cursor.getLong(durationCol) else 0L,
+                        uri = Uri.withAppendedPath(videoCollection, cursor.getLong(idCol).toString()).toString()
+                    )
+                }
+            }
+
+        null
+    }
+
     suspend fun queryAlbums(): List<Album> = withContext(Dispatchers.IO) {
         val buckets = mutableMapOf<Long, Pair<String, Int>>()
 

@@ -1,11 +1,14 @@
 package com.example.galleryapp.ui.editor
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.galleryapp.data.repository.GalleryRepositoryImpl
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 enum class EditorTool { AI, Crop, Adjust, Filter, Brush, Text, Sticker }
 enum class FilterPreset { Original, Vivid, Mono, Fade, Warm, Cool, Noir, Bloom }
@@ -18,17 +21,26 @@ data class AIEditorUiState(
     val saturation: Float = 12f,
     val warmth: Float = -4f,
     val sharpness: Float = 0f,
-    val selectedFilter: FilterPreset = FilterPreset.Original
+    val selectedFilter: FilterPreset = FilterPreset.Original,
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
-class AIEditorViewModel : ViewModel() {
-    private val repository = GalleryRepositoryImpl()
+class AIEditorViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = GalleryRepositoryImpl(application)
     private val _uiState = MutableStateFlow(AIEditorUiState())
     val uiState: StateFlow<AIEditorUiState> = _uiState.asStateFlow()
 
     fun loadPhoto(photoId: Long) {
-        val photo = repository.getPhotoById(photoId)
-        _uiState.update { it.copy(photoColor = photo?.placeholderColor ?: 0xFF1E3A5FL) }
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        viewModelScope.launch {
+            try {
+                val photo = repository.getPhotoById(photoId)
+                _uiState.update { it.copy(photoColor = photo?.placeholderColor ?: 0xFF1E3A5FL, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Unknown error") }
+            }
+        }
     }
 
     fun selectTool(tool: EditorTool) = _uiState.update { it.copy(selectedTool = tool) }

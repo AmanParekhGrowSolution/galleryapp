@@ -10,5 +10,5 @@ interface GalleryRepository {
     fun getAlbums(): Flow<List<Album>>
     fun getVaultPhotos(): Flow<List<Photo>>
     fun getCleanerCategories(): List<CleanerCategory>
-    fun getPhotoById(id: Long): Photo?
+    suspend fun getPhotoById(id: Long): Photo?
 }

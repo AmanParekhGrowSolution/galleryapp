@@ -19,21 +19,30 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      # ── Checkout initialises gh CLI auth with AGENT_PAT ────────────────────
+      # All Claude workflows that call gh write APIs require this step.
+      # Without it, GH_TOKEN=AGENT_PAT gives HTTP 401 on the runner.
+      - name: Checkout (auth setup)
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.AGENT_PAT }}
+          sparse-checkout: .github
+          sparse-checkout-cone-mode: false
+
       # ── Update every open PR that targets main ─────────────────────────────
       # gh pr update-branch merges main into the PR branch via the GitHub API.
-      # If a real file conflict exists, the API returns an error — we label the
-      # PR so claude-resolve-conflict.yml can take over.
       # We use AGENT_PAT (not GITHUB_TOKEN) so the resulting push re-triggers
-      # android-ci.yml and claude-review.yml on the updated branch.
+      # android-ci.yml and claude-review.yml on the updated PR branch.
+      # GITHUB_TOKEN pushes suppress pull_request:synchronize — AGENT_PAT does not.
       - name: Update all open PRs (label conflicts for Claude)
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail
 
-          # Use REST (gh api) not GraphQL (gh pr list --json) — fine-grained PATs
-          # do not have GraphQL access but do have REST access.
+          # Use REST (gh api), not GraphQL (gh pr list --json) — fine-grained
+          # PATs do not have GraphQL access but do have REST access.
           PRS=$(gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" \
                   --jq '.[] | "\(.number) \(.head.ref)"')
 
@@ -50,7 +59,7 @@ jobs:
               cat /tmp/out.txt
               if grep -qiE "merge conflict|cannot be merged|not mergeable|conflict" /tmp/out.txt; then
                 echo "✗ PR #$num has merge conflicts — labeling for Claude"
-                # Use REST for label mutation (same pattern as claude-autofix.yml)
+                # REST label mutation — same pattern as claude-autofix.yml
                 gh api -X POST "repos/$REPO/issues/$num/labels" \
                   -f "labels[]=claude: resolve-conflict" || true
               else

@@ -169,7 +169,8 @@ fun AppNavigation() {
                     navController.navigate(Screen.AppLockSetup) {
                         popUpTo(Screen.Vault) { inclusive = true }
                     }
-                }
+                },
+                onNavigateToSettings = { navController.navigate(Screen.Settings) }
             )
         }
 

@@ -12,6 +12,7 @@
 
     <!-- Home -->
     <string name="gallery_title">GALLERY</string>
+    <string name="home_selected_count">%1$d selected</string>
     <string name="try_free">Try Free</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
@@ -334,6 +335,7 @@
     <string name="content_desc_favorite">Favorite</string>
     <string name="content_desc_delete">Delete photo</string>
     <string name="content_desc_share">Share photo</string>
+    <string name="content_desc_selected">Selected</string>
     <string name="content_desc_edit">Edit photo</string>
     <string name="content_desc_info">Photo info</string>
 </resources>

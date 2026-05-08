@@ -8,8 +8,10 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +24,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,6 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
@@ -41,6 +43,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -54,9 +57,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -157,7 +157,8 @@ fun HomeScreen(
                 onPremiumClick = onPremiumClick,
                 onSearchClick = onSearchClick,
                 onFilterSelect = viewModel::selectFilter,
-                onToggleSelection = viewModel::togglePhotoSelection
+                onToggleSelection = viewModel::togglePhotoSelection,
+                onToggleSelectionMode = viewModel::toggleSelectionMode
             )
             is HomeUiState.Error -> Text(
                 text = state.message,
@@ -180,7 +181,8 @@ private fun HomeContent(
     onPremiumClick: () -> Unit,
     onSearchClick: () -> Unit,
     onFilterSelect: (PhotoFilter) -> Unit,
-    onToggleSelection: (Long) -> Unit
+    onToggleSelection: (Long) -> Unit,
+    onToggleSelectionMode: () -> Unit
 ) {
     val filters = PhotoFilter.entries
 
@@ -190,6 +192,9 @@ private fun HomeContent(
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             HomeTopBar(
+                selectionMode = state.selectionMode,
+                selectedCount = state.selectedIds.size,
+                onCancelSelection = onToggleSelectionMode,
                 onSettingsClick = onSettingsClick,
                 onPremiumClick = onPremiumClick,
                 onSearchClick = onSearchClick
@@ -215,7 +220,7 @@ private fun HomeContent(
 
         state.sections.forEach { section ->
             item(span = { GridItemSpan(maxLineSpan) }) {
-                SectionHeader(label = section.dateLabel)
+                SectionHeader(label = section.dateLabel, onToggleSelectionMode = onToggleSelectionMode)
             }
             items(section.photos, key = { it.id }) { photo ->
                 PhotoThumbnailItem(
@@ -227,6 +232,12 @@ private fun HomeContent(
                     onClick = {
                         if (state.selectionMode) onToggleSelection(photo.id)
                         else onPhotoClick(photo.id)
+                    },
+                    onLongClick = {
+                        if (!state.selectionMode) {
+                            onToggleSelectionMode()
+                            onToggleSelection(photo.id)
+                        }
                     }
                 )
             }
@@ -236,53 +247,81 @@ private fun HomeContent(
 
 @Composable
 private fun HomeTopBar(
+    selectionMode: Boolean,
+    selectedCount: Int,
+    onCancelSelection: () -> Unit,
     onSettingsClick: () -> Unit,
     onPremiumClick: () -> Unit,
     onSearchClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-            .padding(horizontal = 4.dp, vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onSettingsClick) {
-            Icon(
-                imageVector = Icons.Default.Menu,
-                contentDescription = stringResource(R.string.content_desc_menu),
-                tint = OnSurfaceDark
-            )
-        }
-        Text(
-            text = stringResource(R.string.gallery_title),
-            color = BrandBlue,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.sp,
-            modifier = Modifier.weight(1f)
-        )
-        Box(
-            contentAlignment = Alignment.Center,
+    if (selectionMode) {
+        Row(
             modifier = Modifier
-                .clip(RoundedCornerShape(20.dp))
-                .background(Brush.linearGradient(tryFreeGradient))
-                .clickable(onClick = onPremiumClick)
-                .padding(horizontal = 14.dp, vertical = 6.dp)
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onCancelSelection) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = stringResource(R.string.cancel),
+                    tint = OnSurfaceDark
+                )
+            }
             Text(
-                text = stringResource(R.string.try_free),
-                color = Color.White,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold
+                text = stringResource(R.string.home_selected_count, selectedCount),
+                color = OnSurfaceDark,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
             )
         }
-        IconButton(onClick = onSearchClick) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = stringResource(R.string.content_desc_search),
-                tint = OnSurfaceDark
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onSettingsClick) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = stringResource(R.string.content_desc_menu),
+                    tint = OnSurfaceDark
+                )
+            }
+            Text(
+                text = stringResource(R.string.gallery_title),
+                color = BrandBlue,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 1.sp,
+                modifier = Modifier.weight(1f)
             )
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Brush.linearGradient(tryFreeGradient))
+                    .clickable(onClick = onPremiumClick)
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.try_free),
+                    color = Color.White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            IconButton(onClick = onSearchClick) {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = stringResource(R.string.content_desc_search),
+                    tint = OnSurfaceDark
+                )
+            }
         }
     }
 }
@@ -377,7 +416,7 @@ private fun QuickAccessItem(item: QuickItem, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SectionHeader(label: String) {
+private fun SectionHeader(label: String, onToggleSelectionMode: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -394,11 +433,15 @@ private fun SectionHeader(label: String) {
         Text(
             text = stringResource(R.string.select),
             color = BrandBlue,
-            fontSize = 13.sp
+            fontSize = 13.sp,
+            modifier = Modifier
+                .minimumInteractiveComponentSize()
+                .clickable(onClick = onToggleSelectionMode)
         )
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PhotoThumbnailItem(
     photo: Photo,
@@ -406,7 +449,8 @@ private fun PhotoThumbnailItem(
     selectionMode: Boolean,
     roundedThumbs: Boolean,
     showVideoDuration: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
 ) {
     val cornerRadius by animateDpAsState(
         targetValue = if (roundedThumbs) 12.dp else 2.dp,
@@ -419,7 +463,7 @@ private fun PhotoThumbnailItem(
             .padding(1.dp)
             .clip(RoundedCornerShape(cornerRadius))
             .background(Color(photo.placeholderColor))
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         if (photo.uri != null) {
             AsyncImage(
@@ -465,9 +509,9 @@ private fun PhotoThumbnailItem(
                 if (isSelected) {
                     Icon(
                         imageVector = Icons.Default.Check,
-                        contentDescription = null,
+                        contentDescription = stringResource(R.string.content_desc_selected),
                         tint = Color.White,
-                        modifier = Modifier.size(14.dp).semantics { role = Role.Image }
+                        modifier = Modifier.size(14.dp)
                     )
                 }
             }

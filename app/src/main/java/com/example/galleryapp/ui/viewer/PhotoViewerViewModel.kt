@@ -29,17 +29,21 @@ class PhotoViewerViewModel(application: Application) : AndroidViewModel(applicat
     fun loadPhoto(photoId: Long) {
         _uiState.update { PhotoViewerUiState.Loading }
         viewModelScope.launch {
-            val photo = repository.getPhotoById(photoId)
-            _uiState.update {
-                if (photo != null) {
-                    PhotoViewerUiState.Success(
-                        photo = photo,
-                        isFavorite = photo.isFavorite,
-                        showInfo = false
-                    )
-                } else {
-                    PhotoViewerUiState.Error("Photo not found")
+            try {
+                val photo = repository.getPhotoById(photoId)
+                _uiState.update {
+                    if (photo != null) {
+                        PhotoViewerUiState.Success(
+                            photo = photo,
+                            isFavorite = photo.isFavorite,
+                            showInfo = false
+                        )
+                    } else {
+                        PhotoViewerUiState.Error("Photo not found")
+                    }
                 }
+            } catch (e: Exception) {
+                _uiState.update { PhotoViewerUiState.Error(e.message ?: "Unknown error") }
             }
         }
     }

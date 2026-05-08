@@ -21,7 +21,9 @@ data class AIEditorUiState(
     val saturation: Float = 12f,
     val warmth: Float = -4f,
     val sharpness: Float = 0f,
-    val selectedFilter: FilterPreset = FilterPreset.Original
+    val selectedFilter: FilterPreset = FilterPreset.Original,
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
 class AIEditorViewModel(application: Application) : AndroidViewModel(application) {
@@ -30,9 +32,14 @@ class AIEditorViewModel(application: Application) : AndroidViewModel(application
     val uiState: StateFlow<AIEditorUiState> = _uiState.asStateFlow()
 
     fun loadPhoto(photoId: Long) {
+        _uiState.update { it.copy(isLoading = true, error = null) }
         viewModelScope.launch {
-            val photo = repository.getPhotoById(photoId)
-            _uiState.update { it.copy(photoColor = photo?.placeholderColor ?: 0xFF1E3A5FL) }
+            try {
+                val photo = repository.getPhotoById(photoId)
+                _uiState.update { it.copy(photoColor = photo?.placeholderColor ?: 0xFF1E3A5FL, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Unknown error") }
+            }
         }
     }
 

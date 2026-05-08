@@ -120,8 +120,10 @@ class GalleryRepositoryImpl(private val context: Context? = null) : GalleryRepos
 
     override fun getCleanerCategories(): List<CleanerCategory> = cleanerCategories
 
-    override fun getPhotoById(id: Long): Photo? {
-        // Check sample photos; real data would need a suspend function but kept sync for compat
-        return samplePhotos.find { it.id == id }
+    override suspend fun getPhotoById(id: Long): Photo? {
+        if (mediaStore != null && hasMediaPermission()) {
+            mediaStore.getPhotoById(id)?.let { return it }
+        }
+        return samplePhotos.find { it.id == id } ?: vaultPhotos.find { it.id == id }
     }
 }

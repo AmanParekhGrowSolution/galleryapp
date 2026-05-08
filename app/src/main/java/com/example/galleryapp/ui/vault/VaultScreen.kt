@@ -29,10 +29,6 @@ import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Shield
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts.PickMultipleVisualMedia
-import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -259,7 +255,6 @@ private fun UnlockedVault(
 ) {
     val filters = listOf("All", "Personal", "Documents", "Receipts")
     var menuExpanded by remember { mutableStateOf(false) }
-    val pickerLauncher = rememberLauncherForActivityResult(PickMultipleVisualMedia()) { /* vault import not yet implemented */ }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(3),
@@ -269,11 +264,10 @@ private fun UnlockedVault(
             UnlockedTopBar(
                 onBack = onBack,
                 onLock = onLock,
-                onAddClick = { pickerLauncher.launch(PickVisualMediaRequest(PickVisualMedia.ImageAndVideo)) },
+                onAddClick = {},
                 onMoreClick = { menuExpanded = true },
                 menuExpanded = menuExpanded,
                 onMenuDismiss = { menuExpanded = false },
-                onSelectAll = {},
                 onSettings = onNavigateToSettings
             )
         }
@@ -319,7 +313,6 @@ private fun UnlockedTopBar(
     onMoreClick: () -> Unit,
     menuExpanded: Boolean,
     onMenuDismiss: () -> Unit,
-    onSelectAll: () -> Unit,
     onSettings: () -> Unit
 ) {
     Row(
@@ -344,10 +337,6 @@ private fun UnlockedTopBar(
                 Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.content_desc_more), tint = Color.White)
             }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = onMenuDismiss) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.select_all)) },
-                    onClick = { onSelectAll(); onMenuDismiss() }
-                )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.settings_title)) },
                     onClick = { onSettings(); onMenuDismiss() }

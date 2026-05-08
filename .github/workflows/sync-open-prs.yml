@@ -31,9 +31,10 @@ jobs:
         run: |
           set -uo pipefail
 
-          PRS=$(gh pr list --repo "$REPO" --state open --base main \
-                  --json number,headRefName \
-                  -q '.[] | "\(.number) \(.headRefName)"')
+          # Use REST (gh api) not GraphQL (gh pr list --json) — fine-grained PATs
+          # do not have GraphQL access but do have REST access.
+          PRS=$(gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" \
+                  --jq '.[] | "\(.number) \(.head.ref)"')
 
           if [ -z "$PRS" ]; then
             echo "No open PRs targeting main — nothing to sync."
@@ -48,7 +49,9 @@ jobs:
               cat /tmp/out.txt
               if grep -qiE "merge conflict|cannot be merged|not mergeable|conflict" /tmp/out.txt; then
                 echo "✗ PR #$num has merge conflicts — labeling for Claude"
-                gh pr edit "$num" --repo "$REPO" --add-label "claude: resolve-conflict" || true
+                # Use REST for label mutation (same pattern as claude-autofix.yml)
+                gh api -X POST "repos/$REPO/issues/$num/labels" \
+                  -f "labels[]=claude: resolve-conflict" || true
               else
                 echo "⚠ PR #$num update-branch failed for unknown reason — leaving PR alone"
               fi

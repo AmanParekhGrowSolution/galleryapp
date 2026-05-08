@@ -33,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ private val primaryGradient = listOf(Color(0xFF6366F1), Color(0xFF8B5CF6))
 @Composable
 fun VaultScreen(
     onBack: () -> Unit,
+    onNeedsSetup: () -> Unit,
     viewModel: VaultViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -64,6 +66,9 @@ fun VaultScreen(
             .background(Brush.verticalGradient(bgGradient))
     ) {
         when (val state = uiState) {
+            is VaultUiState.NeedsSetup -> {
+                LaunchedEffect(Unit) { onNeedsSetup() }
+            }
             is VaultUiState.Locked -> LockedVault(
                 state = state,
                 onBack = onBack,

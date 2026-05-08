@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 sealed interface VaultUiState {
+    data object NeedsSetup : VaultUiState
+
     data class Locked(
         val enteredPin: String = "",
         val showError: Boolean = false,
@@ -45,6 +47,9 @@ class VaultViewModel(
 
     init {
         checkExistingLockout()
+        if (!prefs.hasVaultPin()) {
+            _uiState.value = VaultUiState.NeedsSetup
+        }
     }
 
     private fun checkExistingLockout() {
@@ -78,12 +83,11 @@ class VaultViewModel(
     }
 
     private fun validatePin(pin: String) {
-        val isCorrect = if (prefs.hasVaultPin()) {
-            prefs.verifyVaultPin(pin)
-        } else {
-            // No PIN set yet — fall back to default for demo purposes
-            pin == "1234"
+        if (!prefs.hasVaultPin()) {
+            _uiState.value = VaultUiState.NeedsSetup
+            return
         }
+        val isCorrect = prefs.verifyVaultPin(pin)
 
         if (isCorrect) {
             prefs.resetVaultFailCount()

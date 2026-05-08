@@ -163,7 +163,14 @@ fun AppNavigation() {
         }
 
         composable(Screen.Vault) {
-            VaultScreen(onBack = { navController.popBackStack() })
+            VaultScreen(
+                onBack = { navController.popBackStack() },
+                onNeedsSetup = {
+                    navController.navigate(Screen.AppLockSetup) {
+                        popUpTo(Screen.Vault) { inclusive = true }
+                    }
+                }
+            )
         }
 
         composable(Screen.Cleaner) {

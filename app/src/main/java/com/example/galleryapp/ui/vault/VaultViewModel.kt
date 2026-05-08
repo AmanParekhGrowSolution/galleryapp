@@ -37,7 +37,7 @@ class VaultViewModel(
 
     constructor(application: Application) : this(application, PrefsManager.create(application))
 
-    private val repository = GalleryRepositoryImpl()
+    private val repository = GalleryRepositoryImpl(application)
     private val _uiState = MutableStateFlow<VaultUiState>(VaultUiState.Locked())
     val uiState: StateFlow<VaultUiState> = _uiState.asStateFlow()
 

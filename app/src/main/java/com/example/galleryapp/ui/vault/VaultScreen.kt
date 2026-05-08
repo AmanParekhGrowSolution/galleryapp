@@ -24,7 +24,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
@@ -264,7 +263,6 @@ private fun UnlockedVault(
             UnlockedTopBar(
                 onBack = onBack,
                 onLock = onLock,
-                onAddClick = {},
                 onMoreClick = { menuExpanded = true },
                 menuExpanded = menuExpanded,
                 onMenuDismiss = { menuExpanded = false },
@@ -309,7 +307,6 @@ private fun UnlockedVault(
 private fun UnlockedTopBar(
     onBack: () -> Unit,
     onLock: () -> Unit,
-    onAddClick: () -> Unit,
     onMoreClick: () -> Unit,
     menuExpanded: Boolean,
     onMenuDismiss: () -> Unit,
@@ -328,9 +325,6 @@ private fun UnlockedTopBar(
         Column(modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.vault_title), color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.auto_locks), color = Color.White.copy(alpha = 0.87f), fontSize = 11.sp)
-        }
-        IconButton(onClick = onAddClick) {
-            Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add), tint = Color.White)
         }
         Box {
             IconButton(onClick = onMoreClick) {

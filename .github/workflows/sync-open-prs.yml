@@ -19,24 +19,21 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      # ── Checkout initialises gh CLI auth with AGENT_PAT ────────────────────
-      # All Claude workflows that call gh write APIs require this step.
-      # Without it, GH_TOKEN=AGENT_PAT gives HTTP 401 on the runner.
-      - name: Checkout (auth setup)
-        uses: actions/checkout@v5
-        with:
-          token: ${{ secrets.AGENT_PAT }}
-          sparse-checkout: .github
-          sparse-checkout-cone-mode: false
+      # ── Authenticate gh CLI with AGENT_PAT ────────────────────────────────
+      # AGENT_PAT is a fine-grained PAT that cannot authenticate git clone
+      # (so actions/checkout fails) but CAN authenticate gh REST API calls.
+      # gh auth login stores the token for all subsequent gh calls in this job.
+      # We use AGENT_PAT (not GITHUB_TOKEN) because GITHUB_TOKEN pushes suppress
+      # pull_request:synchronize events — meaning android-ci.yml and
+      # claude-review.yml would NOT retrigger after the branch update.
+      - name: Authenticate gh CLI with AGENT_PAT
+        env:
+          PAT: ${{ secrets.AGENT_PAT }}
+        run: echo "$PAT" | gh auth login --with-token
 
       # ── Update every open PR that targets main ─────────────────────────────
-      # gh pr update-branch merges main into the PR branch via the GitHub API.
-      # We use AGENT_PAT (not GITHUB_TOKEN) so the resulting push re-triggers
-      # android-ci.yml and claude-review.yml on the updated PR branch.
-      # GITHUB_TOKEN pushes suppress pull_request:synchronize — AGENT_PAT does not.
       - name: Update all open PRs (label conflicts for Claude)
         env:
-          GH_TOKEN: ${{ secrets.AGENT_PAT }}
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail

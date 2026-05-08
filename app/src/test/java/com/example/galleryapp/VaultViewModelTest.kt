@@ -31,6 +31,7 @@ class VaultViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var application: Application
+    private lateinit var prefs: PrefsManager
 
     @Before
     fun setUp() {
@@ -38,13 +39,13 @@ class VaultViewModelTest {
         application = ApplicationProvider.getApplicationContext()
         // Reset vault prefs so each test starts from a clean state
         plainPrefs().edit().clear().commit()
+        prefs = PrefsManager(plainPrefs())
     }
 
     private fun plainPrefs() =
         application.getSharedPreferences("gallery_secure_prefs", Context.MODE_PRIVATE)
 
-    private fun createViewModel() =
-        VaultViewModel(application, PrefsManager(plainPrefs()))
+    private fun createViewModel() = VaultViewModel(application, prefs)
 
     @After
     fun tearDown() {
@@ -52,7 +53,14 @@ class VaultViewModelTest {
     }
 
     @Test
-    fun `initial state is Locked with empty PIN`() {
+    fun `no PIN configured emits NeedsSetup state`() {
+        val viewModel = createViewModel()
+        assertTrue(viewModel.uiState.value is VaultUiState.NeedsSetup)
+    }
+
+    @Test
+    fun `initial state is Locked with empty PIN when PIN is configured`() {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
         val state = viewModel.uiState.value
         assertTrue(state is VaultUiState.Locked)
@@ -62,6 +70,7 @@ class VaultViewModelTest {
 
     @Test
     fun `appendDigit adds digits to enteredPin`() {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
@@ -71,6 +80,7 @@ class VaultViewModelTest {
 
     @Test
     fun `deleteDigit removes last digit from enteredPin`() {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
         viewModel.appendDigit("1")
         viewModel.appendDigit("2")
@@ -81,11 +91,12 @@ class VaultViewModelTest {
 
     @Test
     fun `incorrect PIN shows error and resets enteredPin`() = runTest {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
-        viewModel.appendDigit("9")
-        viewModel.appendDigit("9")
-        viewModel.appendDigit("9")
-        viewModel.appendDigit("9")
+        viewModel.appendDigit("0")
+        viewModel.appendDigit("0")
+        viewModel.appendDigit("0")
+        viewModel.appendDigit("0")
         testDispatcher.scheduler.advanceUntilIdle()
         val state = viewModel.uiState.value as? VaultUiState.Locked
         assertTrue(state?.showError == true)
@@ -93,12 +104,13 @@ class VaultViewModelTest {
     }
 
     @Test
-    fun `correct default PIN transitions to Unlocked`() = runTest {
+    fun `correct configured PIN transitions to Unlocked`() = runTest {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
-        viewModel.appendDigit("1")
-        viewModel.appendDigit("2")
-        viewModel.appendDigit("3")
         viewModel.appendDigit("4")
+        viewModel.appendDigit("3")
+        viewModel.appendDigit("2")
+        viewModel.appendDigit("1")
         testDispatcher.scheduler.advanceUntilIdle()
         val finalState = viewModel.uiState.value
         assertTrue("Expected Unlocked but got $finalState", finalState is VaultUiState.Unlocked)
@@ -106,11 +118,12 @@ class VaultViewModelTest {
 
     @Test
     fun `lock transitions from Unlocked back to Locked`() = runTest {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
-        viewModel.appendDigit("1")
-        viewModel.appendDigit("2")
-        viewModel.appendDigit("3")
         viewModel.appendDigit("4")
+        viewModel.appendDigit("3")
+        viewModel.appendDigit("2")
+        viewModel.appendDigit("1")
         testDispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value is VaultUiState.Unlocked)
         viewModel.lock()
@@ -119,16 +132,17 @@ class VaultViewModelTest {
 
     @Test
     fun `five failed attempts trigger lockout`() = runTest {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
         // First 4 failures — advance time to let each complete
         repeat(4) {
-            viewModel.appendDigit("9"); viewModel.appendDigit("9")
-            viewModel.appendDigit("9"); viewModel.appendDigit("9")
+            viewModel.appendDigit("0"); viewModel.appendDigit("0")
+            viewModel.appendDigit("0"); viewModel.appendDigit("0")
             testDispatcher.scheduler.advanceUntilIdle()
         }
         // 5th failure — check lockout BEFORE advancing time (countdown would drain it)
-        viewModel.appendDigit("9"); viewModel.appendDigit("9")
-        viewModel.appendDigit("9"); viewModel.appendDigit("9")
+        viewModel.appendDigit("0"); viewModel.appendDigit("0")
+        viewModel.appendDigit("0"); viewModel.appendDigit("0")
         val state = viewModel.uiState.value as? VaultUiState.Locked
         assertTrue(
             "Expected lockout after 5 fails, remaining=${state?.lockoutRemainingSeconds}",
@@ -138,15 +152,16 @@ class VaultViewModelTest {
 
     @Test
     fun `lockout countdown decrements over time`() = runTest {
+        prefs.setVaultPin("4321")
         val viewModel = createViewModel()
         // Trigger 5 failures
         repeat(4) {
-            viewModel.appendDigit("9"); viewModel.appendDigit("9")
-            viewModel.appendDigit("9"); viewModel.appendDigit("9")
+            viewModel.appendDigit("0"); viewModel.appendDigit("0")
+            viewModel.appendDigit("0"); viewModel.appendDigit("0")
             testDispatcher.scheduler.advanceUntilIdle()
         }
-        viewModel.appendDigit("9"); viewModel.appendDigit("9")
-        viewModel.appendDigit("9"); viewModel.appendDigit("9")
+        viewModel.appendDigit("0"); viewModel.appendDigit("0")
+        viewModel.appendDigit("0"); viewModel.appendDigit("0")
 
         val before = (viewModel.uiState.value as? VaultUiState.Locked)?.lockoutRemainingSeconds ?: 0
         assertTrue("Expected lockout to have started, remaining=$before", before > 0)

@@ -149,8 +149,10 @@ fun HomeScreen(
             is HomeUiState.Success -> HomeContent(
                 state = state,
                 onPhotoClick = onPhotoClick,
+                onFavoritesClick = { viewModel.selectFilter(PhotoFilter.Favorites) },
                 onVaultClick = onVaultClick,
                 onCameraClick = onCameraClick,
+                onRecentClick = { viewModel.selectFilter(PhotoFilter.Recent) },
                 onSettingsClick = onSettingsClick,
                 onPremiumClick = onPremiumClick,
                 onSearchClick = onSearchClick,
@@ -170,8 +172,10 @@ fun HomeScreen(
 private fun HomeContent(
     state: HomeUiState.Success,
     onPhotoClick: (Long) -> Unit,
+    onFavoritesClick: () -> Unit,
     onVaultClick: () -> Unit,
     onCameraClick: () -> Unit,
+    onRecentClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onPremiumClick: () -> Unit,
     onSearchClick: () -> Unit,
@@ -201,7 +205,12 @@ private fun HomeContent(
         }
 
         item(span = { GridItemSpan(maxLineSpan) }) {
-            QuickAccessRow(onCameraClick = onCameraClick, onVaultClick = onVaultClick)
+            QuickAccessRow(
+                onFavoritesClick = onFavoritesClick,
+                onCameraClick = onCameraClick,
+                onRecentClick = onRecentClick,
+                onVaultClick = onVaultClick
+            )
         }
 
         state.sections.forEach { section ->
@@ -313,7 +322,12 @@ private fun FilterChipsRow(
 }
 
 @Composable
-private fun QuickAccessRow(onCameraClick: () -> Unit = {}, onVaultClick: () -> Unit) {
+private fun QuickAccessRow(
+    onFavoritesClick: () -> Unit,
+    onCameraClick: () -> Unit,
+    onRecentClick: () -> Unit,
+    onVaultClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -323,9 +337,10 @@ private fun QuickAccessRow(onCameraClick: () -> Unit = {}, onVaultClick: () -> U
     ) {
         quickItems.forEachIndexed { index, item ->
             val onClick = when (index) {
+                0 -> onFavoritesClick
                 1 -> onCameraClick
-                3 -> onVaultClick
-                else -> ({})
+                2 -> onRecentClick
+                else -> onVaultClick
             }
             QuickAccessItem(item = item, onClick = onClick)
         }

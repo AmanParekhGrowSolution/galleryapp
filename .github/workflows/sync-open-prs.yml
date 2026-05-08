@@ -1,0 +1,57 @@
+name: 🔄 Sync open PRs with main
+
+on:
+  push:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sync:
+    name: Update open PRs to latest main
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # ── Update every open PR that targets main ─────────────────────────────
+      # gh pr update-branch merges main into the PR branch via the GitHub API.
+      # If a real file conflict exists, the API returns an error — we label the
+      # PR so claude-resolve-conflict.yml can take over.
+      # We use AGENT_PAT (not GITHUB_TOKEN) so the resulting push re-triggers
+      # android-ci.yml and claude-review.yml on the updated branch.
+      - name: Update all open PRs (label conflicts for Claude)
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+
+          PRS=$(gh pr list --repo "$REPO" --state open --base main \
+                  --json number,headRefName \
+                  -q '.[] | "\(.number) \(.headRefName)"')
+
+          if [ -z "$PRS" ]; then
+            echo "No open PRs targeting main — nothing to sync."
+            exit 0
+          fi
+
+          while IFS=' ' read -r num branch; do
+            echo "::group::PR #$num ($branch)"
+            if gh pr update-branch "$num" --repo "$REPO" 2>/tmp/out.txt; then
+              echo "✓ PR #$num is now up-to-date with main"
+            else
+              cat /tmp/out.txt
+              if grep -qiE "merge conflict|cannot be merged|not mergeable|conflict" /tmp/out.txt; then
+                echo "✗ PR #$num has merge conflicts — labeling for Claude"
+                gh pr edit "$num" --repo "$REPO" --add-label "claude: resolve-conflict" || true
+              else
+                echo "⚠ PR #$num update-branch failed for unknown reason — leaving PR alone"
+              fi
+            fi
+            echo "::endgroup::"
+          done <<< "$PRS"

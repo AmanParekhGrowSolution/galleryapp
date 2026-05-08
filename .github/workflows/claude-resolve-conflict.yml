@@ -1,0 +1,249 @@
+name: 🔀 Claude Resolve Merge Conflict
+
+on:
+  pull_request_target:
+    types: [labeled]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  CLAUDE_CODE_DEBUG_LOG_LEVEL: verbose
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  resolve-conflict:
+    name: Resolve Merge Conflict
+    if: "${{ github.event.label.name == 'claude: resolve-conflict' }}"
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+
+    concurrency:
+      group: claude-resolve-conflict-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+
+    steps:
+      # ── 1. Check attempt count (max 3) ────────────────────────────────────
+      - name: Check attempt count
+        id: attempt_check
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          REPO=${{ github.repository }}
+
+          PRIOR=$(gh api "repos/$REPO/issues/$PR/labels" \
+            --jq '[.[] | select(.name | startswith("resolve-conflict: attempt-"))] | length')
+          NEXT=$((PRIOR + 1))
+          echo "attempt=$NEXT" >> "$GITHUB_OUTPUT"
+
+          if [ "$NEXT" -gt 3 ]; then
+            echo "max_reached=true" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/$PR/comments" \
+              -f body="## 🛑 Conflict resolution gave up after 3 attempts
+
+          Claude tried to resolve the merge conflicts 3 times without success. **Manual rebase required.**
+
+          \`\`\`bash
+          git fetch origin main
+          git rebase origin/main
+          # resolve each conflict, then:
+          git add -A && git rebase --continue
+          git push
+          \`\`\`"
+          else
+            echo "max_reached=false" >> "$GITHUB_OUTPUT"
+            gh api -X POST "repos/$REPO/issues/$PR/labels" \
+              -f "labels[]=resolve-conflict: attempt-$NEXT"
+          fi
+
+      # ── 2. Checkout the PR branch (write-capable) ─────────────────────────
+      - name: Checkout PR branch
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+          token: ${{ secrets.AGENT_PAT }}
+
+      # ── 3. JDK so Claude can verify with ./gradlew ────────────────────────
+      - name: Set up JDK 17
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/setup-java@v5
+        with:
+          java-version: "17"
+          distribution: temurin
+
+      - name: Cache Gradle
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/libs.versions.toml') }}
+          restore-keys: gradle-
+
+      - name: Grant Gradle permission
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: chmod +x gradlew
+
+      # ── 4. Configure git identity ──────────────────────────────────────────
+      - name: Configure git
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        run: |
+          git config user.name  "claude-resolve-conflict[bot]"
+          git config user.email "claude-resolve-conflict@users.noreply.github.com"
+
+      # ── 5. Pre-install Claude Code (workaround: upstream installer regression)
+      #         anthropics/claude-code-action#1290 — remove once upstream ships a fix
+      - name: Pre-install Claude Code (workaround for upstream installer regression)
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "Installing Claude Code via official native installer..."
+            curl -fsSL https://claude.ai/install.sh | bash
+          fi
+          if [ ! -x "$HOME/.local/bin/claude" ]; then
+            echo "::error::Claude Code binary still missing after install.sh — upstream issue #1290 may have worsened."
+            exit 1
+          fi
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/claude" --version
+
+      # ── 6. Attempt merge from main and detect conflicts ───────────────────
+      - name: Attempt git merge from main
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        id: merge_attempt
+        run: |
+          git fetch origin main
+          if git merge origin/main --no-edit; then
+            echo "conflicts=false" >> "$GITHUB_OUTPUT"
+            echo "Merge was clean — no conflicts found."
+          else
+            echo "conflicts=true" >> "$GITHUB_OUTPUT"
+            echo "Merge has conflicts — Claude will resolve them."
+            git status
+          fi
+
+      # ── 7. Push clean merge commit (fast path — no Claude needed) ─────────
+      - name: Push clean merge commit
+        if: steps.attempt_check.outputs.max_reached == 'false' && steps.merge_attempt.outputs.conflicts == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          git push
+          gh pr edit ${{ github.event.pull_request.number }} --remove-label "claude: resolve-conflict" || true
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "🔀 Branch merged with \`main\` cleanly (no conflicts). Re-running CI and review..."
+
+      # ── 8. Run Claude to resolve conflicts ────────────────────────────────
+      - name: Run Claude Conflict Resolver
+        if: steps.attempt_check.outputs.max_reached == 'false' && steps.merge_attempt.outputs.conflicts == 'true'
+        uses: ./.github/actions/claude-with-retry
+        with:
+          oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.AGENT_PAT }}
+          show_full_output: true
+          track_progress: true
+          claude_args: >-
+            --model claude-sonnet-4-6
+            --effort high
+            --max-turns 80
+            --permission-mode bypassPermissions
+            --debug-file ${{ runner.temp }}/claude-debug.json
+
+          prompt: |
+            You are resolving merge conflicts on PR #${{ github.event.pull_request.number }} so it can auto-merge into `main`.
+            This is **attempt ${{ steps.attempt_check.outputs.attempt }} of 3**.
+
+            `git merge origin/main` has already been run and left conflict markers in the working tree.
+
+            ## Step 1 — Understand the PR's intent
+            ```
+            gh pr view ${{ github.event.pull_request.number }} --json title,body,files
+            ```
+            Read the PR title + description carefully. This tells you what the PR branch was trying to do.
+
+            ## Step 2 — Inspect all conflict markers
+            ```
+            git status
+            git diff
+            ```
+
+            ## Step 3 — Resolve every conflict
+
+            For each conflicted file:
+            - Read the `<<<<<<< HEAD` side (what was already in `main`) and the `>>>>>>> origin/main` incoming side.
+            - Merge **both** sides correctly: keep the PR branch's new behaviour and incorporate whatever main changed underneath it.
+            - Do NOT blindly pick one side — both sides represent real work and both must survive.
+            - After resolving each file, stage it: `git add <file>`
+
+            ## Off-limits — do NOT edit even if conflicted
+            `.github/`, `gradle/`, `gradle.properties`, `settings.gradle*`, top-level `build.gradle*`, `local.properties`
+
+            If a conflict lives entirely in an off-limits file:
+            - Run `git merge --abort`
+            - Post a comment explaining which file needs manual resolution
+            - Exit WITHOUT pushing
+
+            ## Step 4 — Verify
+            ```
+            bash scripts/check-claude-md.sh --diff origin/main
+            ```
+            Must exit 0. Fix any BLOCKING violations before continuing.
+            ```
+            ./gradlew assembleDebug --no-daemon
+            ```
+            Must compile. Fix any compilation errors before continuing.
+
+            ## Step 5 — Commit and push (only if both checks above passed)
+            ```
+            git commit -m "fix: resolve merge conflicts with main (resolve-conflict attempt ${{ steps.attempt_check.outputs.attempt }})"
+            git push
+            ```
+
+            ## Step 6 — Remove trigger label and post status comment
+            ```
+            gh pr edit ${{ github.event.pull_request.number }} --remove-label "claude: resolve-conflict"
+            gh pr comment ${{ github.event.pull_request.number }} \
+              --body "🔀 Merge conflicts resolved (attempt ${{ steps.attempt_check.outputs.attempt }}). Re-running CI and review..."
+            ```
+
+            Pushing retriggers `android-ci.yml` and `claude-review.yml`. Once those pass, auto-merge fires automatically.
+
+            ## If you cannot resolve safely
+            If the conflict is semantically ambiguous or compilation still fails after your best effort:
+            - Run `git merge --abort`
+            - Post a PR comment describing which files/lines are ambiguous and why you cannot safely resolve them
+            - Exit WITHOUT pushing or removing the label
+
+      # ── 9. Upload Claude debug log ────────────────────────────────────────
+      - name: Upload Claude debug log
+        if: steps.attempt_check.outputs.max_reached == 'false'
+        uses: actions/upload-artifact@v6
+        with:
+          name: claude-debug-resolveconflict-pr${{ github.event.pull_request.number }}-attempt${{ steps.attempt_check.outputs.attempt }}-run${{ github.run_id }}
+          path: ${{ runner.temp }}/claude-debug.json
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ── 10. Failure comment ───────────────────────────────────────────────
+      - name: Post failure comment
+        if: failure() && steps.attempt_check.outputs.max_reached == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+        run: |
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          gh api -X POST "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" \
+            -f body="## ⚠️ Conflict resolution attempt ${{ steps.attempt_check.outputs.attempt }} crashed
+
+          The resolve-conflict workflow itself errored. [View logs]($RUN_URL).
+
+          Re-add the \`claude: resolve-conflict\` label to retry, or resolve manually."

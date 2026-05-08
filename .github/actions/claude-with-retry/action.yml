@@ -23,6 +23,10 @@ inputs:
     description: Whether to echo full Claude output to the runner log
     required: false
     default: "true"
+  track_progress:
+    description: Show a live progress-tracking comment on the PR as Claude works
+    required: false
+    default: "false"
   debug_file:
     description: >-
       Absolute path to the debug JSON file — must match the --debug-file
@@ -42,6 +46,7 @@ runs:
         claude_code_oauth_token: ${{ inputs.oauth_token }}
         github_token:            ${{ inputs.github_token }}
         show_full_output:        ${{ inputs.show_full_output }}
+        track_progress:          ${{ inputs.track_progress }}
         claude_args:             ${{ inputs.claude_args }}
         prompt:                  ${{ inputs.prompt }}
 
@@ -69,6 +74,7 @@ runs:
         claude_code_oauth_token: ${{ inputs.oauth_token }}
         github_token:            ${{ inputs.github_token }}
         show_full_output:        ${{ inputs.show_full_output }}
+        track_progress:          ${{ inputs.track_progress }}
         claude_args:             ${{ inputs.claude_args }}
         prompt:                  ${{ inputs.prompt }}
 
@@ -95,5 +101,6 @@ runs:
         claude_code_oauth_token: ${{ inputs.oauth_token }}
         github_token:            ${{ inputs.github_token }}
         show_full_output:        ${{ inputs.show_full_output }}
+        track_progress:          ${{ inputs.track_progress }}
         claude_args:             ${{ inputs.claude_args }}
         prompt:                  ${{ inputs.prompt }}

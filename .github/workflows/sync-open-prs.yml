@@ -8,8 +8,9 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
+  issues: write
 
 jobs:
   sync:
@@ -26,7 +27,7 @@ jobs:
       # android-ci.yml and claude-review.yml on the updated branch.
       - name: Update all open PRs (label conflicts for Claude)
         env:
-          GH_TOKEN: ${{ secrets.AGENT_PAT }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
         run: |
           set -uo pipefail

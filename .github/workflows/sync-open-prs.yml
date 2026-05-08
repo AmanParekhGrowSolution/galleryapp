@@ -19,6 +19,11 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Checkout (initialises gh CLI auth for AGENT_PAT)
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.AGENT_PAT }}
+
       # ── Update every open PR that targets main ─────────────────────────────
       # Uses AGENT_PAT (classic PAT, repo + workflow scopes) so that the
       # branch update triggers pull_request:synchronize and reruns android-ci

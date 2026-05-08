@@ -34,12 +34,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Update
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -197,8 +195,6 @@ private fun HomeContent(
                 selectionMode = state.selectionMode,
                 selectedCount = state.selectedIds.size,
                 onCancelSelection = onToggleSelectionMode,
-                onShareSelected = {},
-                onDeleteSelected = {},
                 onSettingsClick = onSettingsClick,
                 onPremiumClick = onPremiumClick,
                 onSearchClick = onSearchClick
@@ -254,8 +250,6 @@ private fun HomeTopBar(
     selectionMode: Boolean,
     selectedCount: Int,
     onCancelSelection: () -> Unit,
-    onShareSelected: () -> Unit,
-    onDeleteSelected: () -> Unit,
     onSettingsClick: () -> Unit,
     onPremiumClick: () -> Unit,
     onSearchClick: () -> Unit
@@ -282,20 +276,6 @@ private fun HomeTopBar(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = onShareSelected) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = stringResource(R.string.content_desc_share),
-                    tint = OnSurfaceDark
-                )
-            }
-            IconButton(onClick = onDeleteSelected) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = stringResource(R.string.content_desc_delete),
-                    tint = OnSurfaceDark
-                )
-            }
         }
     } else {
         Row(
